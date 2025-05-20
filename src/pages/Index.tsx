@@ -1,11 +1,99 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import WorkoutCard from "@/components/WorkoutCard";
+import WorkoutHistoryCard from "@/components/WorkoutHistoryCard";
+import NavBar from "@/components/NavBar";
+import { Plus } from "lucide-react";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import { WorkoutTemplate, WorkoutHistory } from "@/types/workout";
+import { toast } from "sonner";
 
 const Index = () => {
+  const [templates, setTemplates] = useLocalStorage<WorkoutTemplate[]>("workout-templates", []);
+  const [history, setHistory] = useLocalStorage<WorkoutHistory[]>("workout-history", []);
+  const [activeTab, setActiveTab] = useState("templates");
+
+  const handleDeleteTemplate = (id: string) => {
+    setTemplates(templates.filter((template) => template.id !== id));
+    toast.success("Modèle supprimé avec succès");
+  };
+
+  const handleStartWorkout = (id: string) => {
+    window.location.href = `/workout/${id}`;
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
+      <NavBar />
+      
+      <div className="container px-4 py-6">
+        <div className="flex flex-col mb-6">
+          <h1 className="text-2xl font-bold">Mes séances</h1>
+          <p className="text-muted-foreground">
+            Créez et suivez vos séances d'entraînement
+          </p>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="templates">Modèles</TabsTrigger>
+            <TabsTrigger value="history">Historique</TabsTrigger>
+          </TabsList>
+          <TabsContent value="templates" className="mt-4">
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+              {templates.length > 0 ? (
+                templates.map((template) => (
+                  <WorkoutCard
+                    key={template.id}
+                    workout={template}
+                    onDelete={handleDeleteTemplate}
+                    onStart={handleStartWorkout}
+                  />
+                ))
+              ) : (
+                <div className="col-span-3 p-8 text-center bg-white rounded-lg shadow-sm dark:bg-zinc-900">
+                  <p className="mb-4 text-muted-foreground">
+                    Vous n'avez pas encore de modèles de séances
+                  </p>
+                  <Button asChild>
+                    <Link to="/templates/new">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Créer un modèle
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+            {templates.length > 0 && (
+              <div className="flex justify-center mt-6">
+                <Button asChild>
+                  <Link to="/templates/new">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nouveau modèle
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="history" className="mt-4">
+            {history.length > 0 ? (
+              <div className="space-y-4">
+                {history.map((workout) => (
+                  <WorkoutHistoryCard key={workout.id} workout={workout} />
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center bg-white rounded-lg shadow-sm dark:bg-zinc-900">
+                <p className="text-muted-foreground">
+                  Vous n'avez pas encore d'historique de séances
+                </p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
