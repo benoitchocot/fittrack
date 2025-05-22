@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { setToken } from "@/utils/auth";
+
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -29,14 +31,14 @@ const Login = () => {
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
         toast.error(data.error || "Erreur lors de la connexion");
         return;
       }
 
-      const data = await res.json();
-      localStorage.setItem("token", data.token); // <- ici
+      setToken(data.token);
       toast.success("Connecté avec succès !");
       navigate("/");
     } catch (error) {
