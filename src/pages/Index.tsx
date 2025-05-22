@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,28 +6,60 @@ import WorkoutCard from "@/components/WorkoutCard";
 import WorkoutHistoryCard from "@/components/WorkoutHistoryCard";
 import NavBar from "@/components/NavBar";
 import { Plus } from "lucide-react";
-import useLocalStorage from "@/hooks/useLocalStorage";
+import useRemoteStorage from "@/hooks/useRemoteStorage";
 import { WorkoutTemplate, WorkoutHistory } from "@/types/workout";
 import { toast } from "sonner";
 
 const Index = () => {
-  const [templates, setTemplates] = useLocalStorage<WorkoutTemplate[]>("workout-templates", []);
-  const [history, setHistory] = useLocalStorage<WorkoutHistory[]>("workout-history", []);
+  const token = localStorage.getItem("token") || "";
+
+  const {
+    data: templates,
+    setData: setTemplates,
+    loading: loadingTemplates,
+  } = useRemoteStorage<WorkoutTemplate[]>({
+    initialValue: [],
+    endpoint: "http://localhost:3001/templates",
+    token,
+  });
+
+  const {
+    data: history,
+    loading: loadingHistory,
+  } = useRemoteStorage<WorkoutHistory[]>({
+    initialValue: [],
+    endpoint: "http://localhost:3001/history",
+    token,
+  });
+
   const [activeTab, setActiveTab] = useState("templates");
 
   const handleDeleteTemplate = (id: string) => {
-    setTemplates(templates.filter((template) => template.id !== id));
+    const updatedTemplates = templates.filter((template) => template.id !== id);
+    setTemplates(updatedTemplates);
     toast.success("Modèle supprimé avec succès");
+    // Optionnel : Ajouter une requête DELETE à ton API ici
   };
 
   const handleStartWorkout = (id: string) => {
     window.location.href = `/workout/${id}`;
   };
 
+  if (loadingTemplates || loadingHistory) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
+        <NavBar />
+        <div className="container px-4 py-6 text-center">
+          <p>Chargement des données...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
       <NavBar />
-      
+
       <div className="container px-4 py-6">
         <div className="flex flex-col mb-6">
           <h1 className="text-2xl font-bold">Mes séances</h1>
@@ -42,6 +73,7 @@ const Index = () => {
             <TabsTrigger value="templates">Modèles</TabsTrigger>
             <TabsTrigger value="history">Historique</TabsTrigger>
           </TabsList>
+
           <TabsContent value="templates" className="mt-4">
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               {templates.length > 0 ? (
@@ -67,6 +99,7 @@ const Index = () => {
                 </div>
               )}
             </div>
+
             {templates.length > 0 && (
               <div className="flex justify-center mt-6">
                 <Button asChild>
@@ -78,6 +111,7 @@ const Index = () => {
               </div>
             )}
           </TabsContent>
+
           <TabsContent value="history" className="mt-4">
             {history.length > 0 ? (
               <div className="space-y-4">

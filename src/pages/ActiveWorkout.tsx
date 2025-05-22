@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import NavBar from "@/components/NavBar";
 import ExerciseForm from "@/components/ExerciseForm";
-import useLocalStorage from "@/hooks/useLocalStorage";
+import useRemoteStorage from "@/hooks/useRemoteStorage";
 import { WorkoutTemplate, ActiveWorkout as ActiveWorkoutType, Exercise } from "@/types/workout";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import {
@@ -25,20 +24,38 @@ import { toast } from "sonner";
 const ActiveWorkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  const [templates, setTemplates] = useLocalStorage<WorkoutTemplate[]>(
-    "workout-templates",
-    []
-  );
-  
+
+  // Token à récupérer dynamiquement selon ton système d'auth
+  const token = localStorage.getItem("token") || "";
+
+  const {
+    data: templates,
+    setData: setTemplates,
+    loading: loadingTemplates,
+    error: errorTemplates,
+  } = useRemoteStorage<WorkoutTemplate[]>({
+    initialValue: [],
+    token,
+    endpoint: "http://localhost:3001/templates",
+  });
+
+  const {
+    data: history,
+    setData: setHistory,
+    loading: loadingHistory,
+    error: errorHistory,
+  } = useRemoteStorage<any[]>({
+    initialValue: [],
+    token,
+    endpoint: "http://localhost:3001/history",
+  });
+
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkoutType | null>(null);
-  const [history, setHistory] = useLocalStorage<any[]>("workout-history", []);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  // Load template and start workout
   useEffect(() => {
-    if (id) {
+    if (!loadingTemplates && templates.length > 0 && id) {
       const template = templates.find((t) => t.id === id);
       if (template) {
         setActiveWorkout(startWorkout(template));
@@ -46,12 +63,9 @@ const ActiveWorkout = () => {
         navigate("/");
         toast.error("Modèle de séance introuvable");
       }
-    } else {
-      navigate("/");
     }
-  }, [id, templates, navigate]);
+  }, [id, templates, loadingTemplates, navigate]);
 
-  // Timer for workout duration
   useEffect(() => {
     if (activeWorkout) {
       const interval = setInterval(() => {
@@ -59,7 +73,6 @@ const ActiveWorkout = () => {
         const now = new Date().getTime();
         setElapsedTime(Math.floor((now - start) / 1000));
       }, 1000);
-      
       return () => clearInterval(interval);
     }
   }, [activeWorkout]);
@@ -70,20 +83,19 @@ const ActiveWorkout = () => {
     }
   };
 
-  const handleFinishWorkout = () => {
+  const handleFinishWorkout = async () => {
     if (activeWorkout) {
-      // Check if at least one set is completed
-      const hasCompletedSet = activeWorkout.exercises.some(exercise => 
+      const hasCompletedSet = activeWorkout.exercises.some(exercise =>
         exercise.sets.some(set => set.completed)
       );
-      
+
       if (!hasCompletedSet) {
         toast.error("Complétez au moins une série avant de terminer la séance");
         return;
       }
-      
+
       const completedWorkout = finishWorkout(activeWorkout);
-      setHistory([completedWorkout, ...history]);
+      await setHistory([completedWorkout, ...history]);
       toast.success("Séance terminée et enregistrée !");
       navigate("/");
     }
@@ -95,12 +107,13 @@ const ActiveWorkout = () => {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  if (loadingTemplates || loadingHistory) return <p>Chargement...</p>;
   if (!activeWorkout) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
       <NavBar />
-      
+
       <div className="container px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -131,7 +144,7 @@ const ActiveWorkout = () => {
             />
           ))}
         </div>
-        
+
         <div className="flex justify-center">
           <Button
             size="lg"
@@ -153,15 +166,15 @@ const ActiveWorkout = () => {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setFinishDialogOpen(false)}
               className="sm:flex-1"
             >
               Continuer la séance
             </Button>
-            <Button 
-              onClick={handleFinishWorkout} 
+            <Button
+              onClick={handleFinishWorkout}
               className="sm:flex-1 bg-green-600 hover:bg-green-700"
             >
               Terminer et enregistrer
