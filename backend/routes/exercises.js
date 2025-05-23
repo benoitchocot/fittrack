@@ -1,3 +1,8 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../db.js'); // Assuming db.js is in the parent directory
+const authMiddleware = require('../middleware/auth.js'); // Assuming authMiddleware.js is in the parent directory. Verify path if possible.
+
 router.post("/:templateId/exercises", authMiddleware, (req, res) => {
   const { name, kg, reps, completed } = req.body;
   const { templateId } = req.params;
@@ -12,3 +17,5 @@ router.post("/:templateId/exercises", authMiddleware, (req, res) => {
   });
   stmt.finalize();
 });
+
+module.exports = router;

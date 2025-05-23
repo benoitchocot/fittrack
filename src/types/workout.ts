@@ -16,6 +16,7 @@ export interface Exercise {
 export interface WorkoutTemplate {
   id: string;
   name: string;
+  description?: string;
   exercises: Exercise[];
   createdAt: Date;
   updatedAt: Date;

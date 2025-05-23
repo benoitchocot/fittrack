@@ -34,11 +34,39 @@ const Index = () => {
 
   const [activeTab, setActiveTab] = useState("templates");
 
-  const handleDeleteTemplate = (id: string) => {
-    const updatedTemplates = templates.filter((template) => template.id !== id);
-    setTemplates(updatedTemplates);
-    toast.success("Modèle supprimé avec succès");
-    // Optionnel : Ajouter une requête DELETE à ton API ici
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:3001/templates/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`, // token is accessible from component scope
+        },
+      });
+
+      if (!response.ok) {
+        // Attempt to parse error body, otherwise use statusText
+        let errorData = { error: `Erreur HTTP ${response.status}` }; // Default error
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          // If parsing JSON fails, use the status text or the default message.
+          errorData.error = response.statusText || errorData.error;
+        }
+        toast.error(`Erreur serveur: ${errorData.error}`);
+        return; // Stop further execution if API call fails
+      }
+
+      // If API call is successful, then update local state
+      const updatedTemplates = templates.filter((template) => template.id !== id);
+      setTemplates(updatedTemplates); // This is setData from useRemoteStorage
+      toast.success("Modèle supprimé avec succès");
+
+    } catch (error) {
+      console.error("Failed to delete template via API:", error);
+      // Check if error is an instance of Error to safely access message property
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      toast.error(`Erreur lors de la suppression du modèle: ${errorMessage}.`);
+    }
   };
 
   const handleStartWorkout = (id: string) => {

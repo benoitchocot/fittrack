@@ -12,7 +12,7 @@ import {
 import NavBar from "@/components/NavBar";
 import ExerciseForm from "@/components/ExerciseForm";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
-import { WorkoutTemplate, ActiveWorkout as ActiveWorkoutType, Exercise } from "@/types/workout";
+import { WorkoutTemplate, ActiveWorkout as ActiveWorkoutType, Exercise, WorkoutHistory } from "@/types/workout";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import {
   startWorkout,
@@ -24,15 +24,11 @@ import { toast } from "sonner";
 const ActiveWorkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  // Token à récupérer dynamiquement selon ton système d'auth
   const token = localStorage.getItem("token") || "";
 
   const {
     data: templates,
-    setData: setTemplates,
     loading: loadingTemplates,
-    error: errorTemplates,
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
     token,
@@ -40,14 +36,13 @@ const ActiveWorkout = () => {
   });
 
   const {
-    data: history,
-    setData: setHistory,
+    data: history, // Local optimistic cache of history
+    setData: setHistory, // Setter for the local cache
     loading: loadingHistory,
-    error: errorHistory,
-  } = useRemoteStorage<any[]>({
+  } = useRemoteStorage<WorkoutHistory[]>({ 
     initialValue: [],
     token,
-    endpoint: "http://localhost:3001/history",
+    endpoint: "http://localhost:3001/history", // This endpoint now returns full WorkoutHistory objects
   });
 
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkoutType | null>(null);
@@ -94,10 +89,42 @@ const ActiveWorkout = () => {
         return;
       }
 
-      const completedWorkout = finishWorkout(activeWorkout);
-      await setHistory([completedWorkout, ...history]);
-      toast.success("Séance terminée et enregistrée !");
-      navigate("/");
+      const completedWorkout = finishWorkout(activeWorkout); // This is a WorkoutHistory object
+
+      try {
+        const response = await fetch("http://localhost:3001/history", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          // Send the entire completedWorkout object
+          body: JSON.stringify(completedWorkout), 
+        });
+
+        if (!response.ok) {
+          let errorMsg = response.statusText;
+          try {
+            const errorData = await response.json();
+            if (errorData && errorData.error) {
+              errorMsg = errorData.error;
+            }
+          } catch (e) { /* Ignore if response is not JSON */ }
+          toast.error(`Erreur serveur: ${errorMsg}`);
+          return; 
+        }
+        
+        // Optimistically update local history state. 
+        // The `useRemoteStorage` hook for history on the Index page will fetch the authoritative list.
+        setHistory([completedWorkout, ...history]); 
+        toast.success("Séance terminée et enregistrée !");
+        navigate("/");
+
+      } catch (error) {
+        console.error("Failed to save workout history:", error);
+        const message = error instanceof Error ? error.message : "Erreur inconnue";
+        toast.error(`Échec de l'enregistrement de l'historique: ${message}. Vérifiez votre connexion.`);
+      }
     }
   };
 
@@ -113,7 +140,6 @@ const ActiveWorkout = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
       <NavBar />
-
       <div className="container px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -139,7 +165,7 @@ const ActiveWorkout = () => {
               key={exercise.id}
               exercise={exercise}
               onUpdate={handleExerciseUpdate}
-              onDelete={() => {}}
+              onDelete={() => { /* onDelete is not implemented */ }}
               isActive={true}
             />
           ))}
