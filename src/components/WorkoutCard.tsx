@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,12 +34,15 @@ const WorkoutCard = ({ workout, onDelete, onStart }: WorkoutCardProps) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link to={`/templates/edit/${workout.id}`} className="flex items-center">
+                <Link
+                  to={`/templates/edit/${workout.id}`}
+                  className="flex items-center"
+                >
                   <Edit className="mr-2 h-4 w-4" />
                   <span>Modifier</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="flex items-center text-destructive focus:text-destructive"
                 onClick={() => onDelete(workout.id)}
               >
@@ -53,14 +55,22 @@ const WorkoutCard = ({ workout, onDelete, onStart }: WorkoutCardProps) => {
       </CardHeader>
       <CardContent>
         <div className="text-sm text-muted-foreground mb-4">
-          {workout.exercises.length} exercice{workout.exercises.length !== 1 ? "s" : ""}
+          {workout.exercises && Array.isArray(workout.exercises)
+            ? workout.exercises.length
+            : 0}{" "}
+          exercice
+          {(workout.exercises && Array.isArray(workout.exercises)
+            ? workout.exercises.length
+            : 0) !== 1
+            ? "s"
+            : ""}
         </div>
         <div className="flex justify-between items-center">
           <div className="text-xs text-muted-foreground">
             {new Date(workout.updatedAt).toLocaleDateString("fr-FR")}
           </div>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             className="bg-workout-primary hover:bg-workout-dark"
             onClick={() => onStart(workout.id)}
           >

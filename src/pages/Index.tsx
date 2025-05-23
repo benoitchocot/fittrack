@@ -9,10 +9,9 @@ import { Plus } from "lucide-react";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
 import { WorkoutTemplate, WorkoutHistory } from "@/types/workout";
 import { toast } from "sonner";
+import { getToken } from "@/utils/auth"; // Import getToken
 
 const Index = () => {
-  const token = localStorage.getItem("token") || "";
-
   const {
     data: templates,
     setData: setTemplates,
@@ -20,7 +19,6 @@ const Index = () => {
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
     endpoint: "http://localhost:3001/templates",
-    token,
   });
 
   const {
@@ -29,17 +27,21 @@ const Index = () => {
   } = useRemoteStorage<WorkoutHistory[]>({
     initialValue: [],
     endpoint: "http://localhost:3001/history",
-    token,
   });
 
   const [activeTab, setActiveTab] = useState("templates");
 
   const handleDeleteTemplate = async (id: string) => {
     try {
+      const authToken = getToken();
+      if (!authToken) {
+        toast.error("Utilisateur non authentifié. Impossible de supprimer le modèle.");
+        return;
+      }
       const response = await fetch(`http://localhost:3001/templates/${id}`, {
         method: "DELETE",
         headers: {
-          "Authorization": `Bearer ${token}`, // token is accessible from component scope
+          "Authorization": `Bearer ${authToken}`,
         },
       });
 

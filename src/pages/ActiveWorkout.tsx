@@ -12,6 +12,7 @@ import {
 import NavBar from "@/components/NavBar";
 import ExerciseForm from "@/components/ExerciseForm";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
+import { getToken } from "@/utils/auth"; // Import getToken
 import { WorkoutTemplate, ActiveWorkout as ActiveWorkoutType, Exercise, WorkoutHistory } from "@/types/workout";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import {
@@ -24,14 +25,12 @@ import { toast } from "sonner";
 const ActiveWorkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const token = localStorage.getItem("token") || "";
 
   const {
     data: templates,
     loading: loadingTemplates,
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
-    token,
     endpoint: "http://localhost:3001/templates",
   });
 
@@ -41,7 +40,6 @@ const ActiveWorkout = () => {
     loading: loadingHistory,
   } = useRemoteStorage<WorkoutHistory[]>({ 
     initialValue: [],
-    token,
     endpoint: "http://localhost:3001/history", // This endpoint now returns full WorkoutHistory objects
   });
 
@@ -92,11 +90,28 @@ const ActiveWorkout = () => {
       const completedWorkout = finishWorkout(activeWorkout); // This is a WorkoutHistory object
 
       try {
+        // N.B: The token is now handled by the useRemoteStorage hook or directly in fetch calls if not using the hook.
+        // For this specific POST request, since we are not using the saveData function from useRemoteStorage,
+        // we would need to ensure getToken() is called here if direct fetch is maintained.
+        // However, the instruction is to modify useRemoteStorage usage. This part of the code
+        // is not using useRemoteStorage for the POST, so it's outside the current scope of changes
+        // for useRemoteStorage. But if it were to be refactored to use saveData, token would be handled.
+        // For now, let's assume this direct fetch needs to be updated separately or is handled
+        // by another mechanism if `token` variable was removed.
+        // For the purpose of this subtask, I will remove the direct usage of `token` here as well,
+        // assuming it will be handled by a global fetch interceptor or similar, or needs to be
+        // refactored to use `getToken()` from `src/utils/auth.ts`.
+        // To be safe and ensure this POST continues to work, I will add getToken() here.
+        const authToken = getToken(); // Use getToken from auth utils
+        if (!authToken) {
+          toast.error("Utilisateur non authentifié. Impossible de sauvegarder l'historique.");
+          return; // Prevent fetch if no token
+        }
         const response = await fetch("http://localhost:3001/history", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            "Authorization": `Bearer ${authToken}`,
           },
           // Send the entire completedWorkout object
           body: JSON.stringify(completedWorkout), 

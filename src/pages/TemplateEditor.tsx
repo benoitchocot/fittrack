@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import NavBar from "@/components/NavBar";
 import ExerciseForm from "@/components/ExerciseForm";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
+// import { getToken } from "@/utils/auth"; // Supprimer cet import
+import { useAuth } from "@/context/AuthContext"; // Importer useAuth
 import { WorkoutTemplate, Exercise } from "@/types/workout";
 import { Plus, ArrowLeft } from "lucide-react";
 import {
@@ -19,7 +21,7 @@ import { toast } from "sonner";
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const token = localStorage.getItem("token") || "";
+  const { token: authTokenFromContext, isAuthenticated } = useAuth(); // Obtenir le token et l'état d'auth du contexte
 
   const {
     data: templates,
@@ -29,7 +31,6 @@ const TemplateEditor = () => {
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
     endpoint: "http://localhost:3001/templates",
-    token,
   });
 
   const [workout, setWorkout] = useState<WorkoutTemplate>(
@@ -109,12 +110,19 @@ const TemplateEditor = () => {
     setIsSaving(true);
 
     try {
+      // const authToken = getToken(); // Supprimer cette ligne
+      if (!isAuthenticated || !authTokenFromContext) { // Utiliser les valeurs du contexte
+        toast.error("Utilisateur non authentifié. Impossible de sauvegarder.");
+        setIsSaving(false);
+        return;
+      }
+
       if (isEditMode && workout.id) { // Ensure workout.id is present for PUT
         const response = await fetch(`http://localhost:3001/templates/${workout.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authTokenFromContext}`, // Utiliser le token du contexte
           },
           body: JSON.stringify(workout),
         });
@@ -136,7 +144,7 @@ const TemplateEditor = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${authTokenFromContext}`, // Utiliser le token du contexte
           },
           body: JSON.stringify(workout),
         });
