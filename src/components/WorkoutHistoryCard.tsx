@@ -8,6 +8,25 @@ interface WorkoutHistoryCardProps {
 }
 
 const WorkoutHistoryCard = ({ workout }: WorkoutHistoryCardProps) => {
+  if (!workout || !workout.exercises || !Array.isArray(workout.exercises)) {
+    console.error('Invalid workout data passed to WorkoutHistoryCard:', workout);
+    return (
+      <Card className="workout-card mb-4 border-red-500">
+        <CardHeader>
+          <CardTitle className="text-red-500">Données d'historique invalides</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground">
+            L'objet 'workout' ou son champ 'exercises' est manquant ou malformé.
+          </p>
+          <pre className="text-xs mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto">
+            {JSON.stringify(workout, null, 2)}
+          </pre>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Calculate total volume (weight * reps)
   const totalVolume = workout.exercises.reduce((sum, exercise) => {
     return sum + exercise.sets.reduce((setSum, set) => {
@@ -22,7 +41,8 @@ const WorkoutHistoryCard = ({ workout }: WorkoutHistoryCardProps) => {
   );
 
   // Format date as "Day Month" (e.g., "15 Mai")
-  const formattedDate = new Date(workout.startedAt).toLocaleDateString('fr-FR', {
+  // Use finishedAt as the primary display date, since both startedAt and finishedAt are derived from logged_at
+  const formattedDate = new Date(workout.finishedAt).toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'short'
   });

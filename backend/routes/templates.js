@@ -7,36 +7,153 @@ console.log(
   "DEBUG: backend/routes/templates.js - Fichier chargé et initialisé."
 );
 
+// Promisify db.run and db.all - these can be defined once at the top or imported from a utils file
+const runExec = (query, params) =>
+  new Promise((resolve, reject) => {
+    db.run(query, params, function (err) {
+      if (err) {
+        console.error("DB runExec Error:", query, params, err.message);
+        return reject(err);
+      }
+      resolve(this);
+    });
+  });
+
+const runQuery = (query, params) =>
+  new Promise((resolve, reject) => {
+    db.all(query, params, (err, rows) => {
+      if (err) {
+        console.error("DB runQuery Error:", query, params, err.message);
+        return reject(err);
+      }
+      resolve(rows);
+    });
+  });
+
 // POST route to create a new template
-router.post("/", authMiddleware, (req, res) => {
-  const { name, description } = req.body;
+router.post("/", authMiddleware, async (req, res) => {
+  const { name, description, exercises: exercisesPayload } = req.body;
   const userId = req.user.userId;
 
   if (!name) {
     return res.status(400).json({ error: "Le nom du modèle est requis." });
   }
 
-  const stmt = db.prepare(
-    "INSERT INTO templates (userId, name, description) VALUES (?, ?, ?)"
-  );
-  stmt.run(userId, name, description || null, function (err) {
-    if (err) {
-      console.error("DB Error (Insert Template):", err.message);
-      return res
-        .status(500)
-        .json({
-          error: "Erreur base de données lors de la création du modèle.",
+  try {
+    await runExec("BEGIN TRANSACTION");
+    console.log(`[POST /templates] Transaction started for user ${userId}.`);
+
+    const templateResult = await runExec(
+      "INSERT INTO templates (userId, name, description) VALUES (?, ?, ?)",
+      [userId, name, description || null]
+    );
+    const newTemplateId = templateResult.lastID;
+    console.log(`[POST /templates] Created template with ID: ${newTemplateId}`);
+
+    let savedExercises = [];
+
+    if (Array.isArray(exercisesPayload)) {
+      for (const exercise of exercisesPayload) {
+        if (!exercise.exercise_name) {
+          console.warn(
+            `[POST /templates] Skipping exercise due to missing name:`,
+            exercise
+          );
+          continue;
+        }
+        console.log(
+          `[POST /templates] Inserting exercise: ${exercise.exercise_name} for template ID: ${newTemplateId}`
+        );
+        const namedExerciseResult = await runExec(
+          "INSERT INTO template_named_exercises (template_id, exercise_name, notes, order_num) VALUES (?, ?, ?, ?)",
+          [
+            newTemplateId,
+            exercise.exercise_name,
+            exercise.notes || null,
+            exercise.order_num || null,
+          ]
+        );
+        const newNamedExerciseId = namedExerciseResult.lastID;
+        console.log(
+          `[POST /templates] Inserted named exercise ID: ${newNamedExerciseId}`
+        );
+
+        let savedSets = [];
+        if (Array.isArray(exercise.sets)) {
+          for (const set of exercise.sets) {
+            const completedStatus =
+              typeof set.completed === "boolean"
+                ? set.completed
+                : set.completed === "true" || set.completed === 1;
+            console.log(
+              `[POST /templates] Inserting set for named exercise ID ${newNamedExerciseId}:`,
+              set
+            );
+            const setResult = await runExec(
+              "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed) VALUES (?, ?, ?, ?, ?)",
+              [
+                newNamedExerciseId,
+                set.set_order || null,
+                set.kg || 0,
+                set.reps || 0,
+                completedStatus,
+              ]
+            );
+            savedSets.push({
+              id: setResult.lastID,
+              template_named_exercise_id: newNamedExerciseId, // Corrected to newNamedExerciseId
+              set_order: set.set_order || null,
+              kg: set.kg || 0,
+              reps: set.reps || 0,
+              completed: completedStatus,
+            });
+          }
+        }
+        savedExercises.push({
+          id: newNamedExerciseId,
+          template_id: newTemplateId, // Corrected to newTemplateId
+          exercise_name: exercise.exercise_name,
+          notes: exercise.notes || null,
+          order_num: exercise.order_num || null,
+          sets: savedSets,
         });
+      }
     }
-    // Respond with the created template object
+
+    await runExec("COMMIT");
+    console.log(
+      `[POST /templates] Transaction committed for template ID: ${newTemplateId}`
+    );
+
     res.status(201).json({
-      id: this.lastID,
-      userId: userId, // Include userId in the response as per the example
+      id: newTemplateId,
+      userId: userId,
       name: name,
       description: description || null,
+      exercises: savedExercises, // Include processed exercises
     });
-  });
-  stmt.finalize();
+  } catch (error) {
+    console.error(
+      `[POST /templates] Error during transaction for user ${userId}:`,
+      error.message,
+      error.stack
+    );
+    try {
+      await runExec("ROLLBACK");
+      console.log(
+        `[POST /templates] Transaction rolled back for user ${userId}.`
+      );
+    } catch (rbError) {
+      console.error(
+        `[POST /templates] Error rolling back transaction for user ${userId}:`,
+        rbError.message
+      );
+    }
+    res.status(500).json({
+      error: "Erreur base de données lors de la création du modèle.",
+      details: error.message,
+    });
+  }
 });
 
 // GET /templates - Fetch all templates for a user
@@ -45,19 +162,6 @@ router.get("/", authMiddleware, async (req, res) => {
   console.log(
     `DEBUG: GET /templates - REQUÊTE REÇUE ! (Authentifié pour userId: ${userId})`
   );
-
-  // Promisify db.all for use with async/await
-  const runQuery = (query, params) => {
-    return new Promise((resolve, reject) => {
-      db.all(query, params, (err, rows) => {
-        if (err) {
-          console.error("DB Error in runQuery:", query, params, err.message);
-          return reject(err);
-        }
-        resolve(rows);
-      });
-    });
-  };
 
   try {
     const templates = await runQuery(
@@ -76,13 +180,12 @@ router.get("/", authMiddleware, async (req, res) => {
           "SELECT id, template_named_exercise_id, set_order, kg, reps, completed FROM exercise_sets WHERE template_named_exercise_id = ? ORDER BY set_order",
           [namedExercise.id]
         );
-        // Ensure boolean conversion for completed: SQLite stores boolean as 0 or 1
         namedExercise.sets = sets.map((s) => ({
           ...s,
-          completed: !!s.completed, // Converts 0 to false, 1 to true
+          completed: !!s.completed,
         }));
       }
-      template.exercises = namedExercises; // Use 'exercises' to match POST payload structure
+      template.exercises = namedExercises;
     }
 
     res.json(templates);
@@ -92,11 +195,9 @@ router.get("/", authMiddleware, async (req, res) => {
       error.message,
       error.stack
     );
-    res
-      .status(500)
-      .json({
-        error: "Erreur base de données lors de la récupération des modèles.",
-      });
+    res.status(500).json({
+      error: "Erreur base de données lors de la récupération des modèles.",
+    });
   }
 });
 
@@ -108,22 +209,8 @@ router.get("/:id", authMiddleware, async (req, res) => {
     `DEBUG: GET /templates/${templateId} - REQUÊTE REÇUE ! (Authentifié pour userId: ${userId})`
   );
 
-  // Promisify db.all for use with async/await (can be refactored to a common utility)
-  const runQuery = (query, params) => {
-    return new Promise((resolve, reject) => {
-      db.all(query, params, (err, rows) => {
-        if (err) {
-          console.error("DB Error in runQuery:", query, params, err.message);
-          return reject(err);
-        }
-        resolve(rows);
-      });
-    });
-  };
-
   try {
     const templates = await runQuery(
-      // db.all returns an array, even for single item queries by ID
       "SELECT id, name, description, userId FROM templates WHERE id = ? AND userId = ?",
       [templateId, userId]
     );
@@ -148,10 +235,10 @@ router.get("/:id", authMiddleware, async (req, res) => {
       );
       namedExercise.sets = sets.map((s) => ({
         ...s,
-        completed: !!s.completed, // Converts 0 to false, 1 to true
+        completed: !!s.completed,
       }));
     }
-    singleTemplate.exercises = namedExercises; // Use 'exercises' to match POST payload structure
+    singleTemplate.exercises = namedExercises;
 
     res.json(singleTemplate);
   } catch (error) {
@@ -160,11 +247,9 @@ router.get("/:id", authMiddleware, async (req, res) => {
       error.message,
       error.stack
     );
-    res
-      .status(500)
-      .json({
-        error: "Erreur base de données lors de la récupération du modèle.",
-      });
+    res.status(500).json({
+      error: "Erreur base de données lors de la récupération du modèle.",
+    });
   }
 });
 
@@ -172,9 +257,8 @@ router.get("/:id", authMiddleware, async (req, res) => {
 router.put("/:id", authMiddleware, async (req, res) => {
   const { id: templateId } = req.params;
   const userId = req.user.userId;
-  const { name, description, exercises: namedExercisesPayload } = req.body;
+  const { name, description, exercises: exercisesPayload } = req.body; // exercisesPayload is the transformed exercises array from frontend
 
-  // Log initial call details
   console.log(
     `[PUT /templates/${templateId}] Request received. User ID: ${userId}. Body:`,
     req.body
@@ -186,31 +270,11 @@ router.put("/:id", authMiddleware, async (req, res) => {
     );
     return res.status(400).json({ error: "Le nom du modèle est requis." });
   }
-  const exercisesToProcess = Array.isArray(namedExercisesPayload)
-    ? namedExercisesPayload
-    : [];
 
-  // Promisify db.run and db.all - define them here or ensure they are available in scope
-  const runExec = (query, params) =>
-    new Promise((resolve, reject) => {
-      db.run(query, params, function (err) {
-        if (err) {
-          console.error("DB runExec Error:", query, params, err.message);
-          return reject(err);
-        }
-        resolve(this);
-      });
-    });
-  const runQuery = (query, params) =>
-    new Promise((resolve, reject) => {
-      db.all(query, params, (err, rows) => {
-        if (err) {
-          console.error("DB runQuery Error:", query, params, err.message);
-          return reject(err);
-        }
-        resolve(rows);
-      });
-    });
+  // Frontend now sends exercises with exercise_name, notes, and sets with kg.
+  const exercisesToProcess = Array.isArray(exercisesPayload)
+    ? exercisesPayload
+    : [];
 
   try {
     await runExec("BEGIN TRANSACTION");
@@ -220,97 +284,109 @@ router.put("/:id", authMiddleware, async (req, res) => {
       "SELECT id, userId FROM templates WHERE id = ? AND userId = ?",
       [templateId, userId]
     );
-    console.log(
-      `[PUT /templates/${templateId}] Fetched existing template for check:`,
-      existingTemplateArray
-    );
 
     if (existingTemplateArray.length === 0) {
       console.log(
         `[PUT /templates/${templateId}] Template not found or user ${userId} not authorized. Rolling back.`
       );
-      await runExec("ROLLBACK"); // Correctly added rollback
+      await runExec("ROLLBACK");
       return res
         .status(404)
         .json({ error: "Modèle non trouvé ou non autorisé." });
     }
 
-    console.log(
-      `[PUT /templates/${templateId}] Updating template details in 'templates' table...`
-    );
     await runExec(
       "UPDATE templates SET name = ?, description = ? WHERE id = ? AND userId = ?",
       [name, description || null, templateId, userId]
     );
+    console.log(`[PUT /templates/${templateId}] Updated 'templates' table.`);
 
-    console.log(
-      `[PUT /templates/${templateId}] Deleting old named exercises from 'template_named_exercises' table...`
-    );
+    // Delete old exercises and sets associated with this template
+    // Assumes ON DELETE CASCADE for 'exercise_sets' linked to 'template_named_exercises'
     await runExec(
       "DELETE FROM template_named_exercises WHERE template_id = ?",
       [templateId]
     );
-    // This assumes ON DELETE CASCADE for 'exercise_sets' linked to 'template_named_exercises'
+    console.log(`[PUT /templates/${templateId}] Deleted old exercises from 'template_named_exercises'.`);
 
-    for (const namedExercise of exercisesToProcess) {
-      if (!namedExercise.name) {
+    let processedExercises = []; // To store exercises and sets with their new DB IDs for the response
+
+    for (const exercise of exercisesToProcess) {
+      if (!exercise.exercise_name) {
         console.warn(
-          `[PUT /templates/${templateId}] Skipping named exercise due to missing name:`,
-          namedExercise
+          `[PUT /templates/${templateId}] Skipping exercise due to missing exercise_name:`,
+          exercise
         );
         continue;
       }
       console.log(
-        `[PUT /templates/${templateId}] Inserting named exercise: ${namedExercise.name}`
+        `[PUT /templates/${templateId}] Processing exercise: ${exercise.exercise_name}`
       );
       const namedExerciseResult = await runExec(
         "INSERT INTO template_named_exercises (template_id, exercise_name, notes, order_num) VALUES (?, ?, ?, ?)",
         [
           templateId,
-          namedExercise.name,
-          namedExercise.notes || null,
-          namedExercise.order_num || null,
+          exercise.exercise_name,
+          exercise.notes || null,
+          exercise.order_num || null,
         ]
       );
-      const namedExerciseId = namedExerciseResult.lastID;
+      const newNamedExerciseId = namedExerciseResult.lastID;
       console.log(
-        `[PUT /templates/${templateId}] Inserted named exercise ID: ${namedExerciseId}`
+        `[PUT /templates/${templateId}] Inserted named exercise ID: ${newNamedExerciseId}`
       );
 
-      if (Array.isArray(namedExercise.sets)) {
-        for (const set of namedExercise.sets) {
+      let processedSets = [];
+      if (Array.isArray(exercise.sets)) {
+        for (const set of exercise.sets) {
           const completedStatus =
             typeof set.completed === "boolean"
               ? set.completed
               : set.completed === "true" || set.completed === 1;
+          
           console.log(
-            `[PUT /templates/${templateId}] Inserting set for named exercise ID ${namedExerciseId}:`,
+            `[PUT /templates/${templateId}] Inserting set for named exercise ID ${newNamedExerciseId}:`,
             set
           );
-          await runExec(
+          const setResult = await runExec(
             "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed) VALUES (?, ?, ?, ?, ?)",
             [
-              namedExerciseId,
+              newNamedExerciseId, // Consistent usage here
               set.set_order || null,
               set.kg || 0,
               set.reps || 0,
               completedStatus,
             ]
           );
+          processedSets.push({
+            id: setResult.lastID,
+            template_named_exercise_id: newNamedExerciseId,
+            set_order: set.set_order || null,
+            kg: set.kg || 0,
+            reps: set.reps || 0,
+            completed: completedStatus,
+          });
         }
       }
+      processedExercises.push({
+        id: newNamedExerciseId,
+        template_id: parseInt(templateId, 10),
+        exercise_name: exercise.exercise_name,
+        notes: exercise.notes || null,
+        order_num: exercise.order_num || null,
+        sets: processedSets,
+      });
     }
 
-    console.log(`[PUT /templates/${templateId}] Committing transaction...`);
     await runExec("COMMIT");
+    console.log(`[PUT /templates/${templateId}] Transaction committed.`);
 
-    // For consistency and to provide feedback, return the updated representation
     res.json({
-      id: templateId,
-      userId,
-      name,
-      description,
-      exercises: exercisesToProcess,
+      id: parseInt(templateId, 10),
+      userId: parseInt(userId, 10), // Ensure userId is also an int if it comes from req.user.userId as string
+      name: name,
+      description: description,
+      exercises: processedExercises, // Send back the processed exercises and sets with their new DB IDs
     });
   } catch (error) {
     console.error(
@@ -318,23 +394,23 @@ router.put("/:id", authMiddleware, async (req, res) => {
       error.message,
       error.stack
     );
-    // Attempt to rollback on any error
-    db.run("ROLLBACK", (rbError) => {
-      // Use db.run directly for rollback, don't await if it might hide original error
-      if (rbError)
-        console.error(
-          `[PUT /templates/${templateId}] Rollback Error after failure:`,
-          rbError.message
-        );
-    });
+    try {
+      await runExec("ROLLBACK");
+      console.log(`[PUT /templates/${templateId}] Transaction rolled back.`);
+    } catch (rbError) {
+      console.error(
+        `[PUT /templates/${templateId}] Error rolling back transaction:`,
+        rbError.message
+      );
+    }
     res
       .status(500)
       .json({
         error: "Erreur base de données lors de la mise à jour du modèle.",
+        details: error.message,
       });
   }
 });
-
 // DELETE /templates/:id - Delete a template
 router.delete("/:id", authMiddleware, async (req, res) => {
   const { id: templateId } = req.params;
@@ -343,50 +419,30 @@ router.delete("/:id", authMiddleware, async (req, res) => {
     `DEBUG: DELETE /templates/${templateId} - REQUÊTE REÇUE ! (Authentifié pour userId: ${userId})`
   );
 
-  // Promisify db.run if not already done at a higher level
-  const runExec = (query, params) =>
-    new Promise((resolve, reject) => {
-      db.run(query, params, function (err) {
-        if (err) {
-          console.error("DB Error in runExec:", query, params, err.message);
-          return reject(err);
-        }
-        resolve(this); // this contains lastID, changes
-      });
-    });
-
   try {
-    // The DELETE statement itself with userId check handles ownership.
-    // Checking 'changes' property of the result is key.
     const result = await runExec(
       "DELETE FROM templates WHERE id = ? AND userId = ?",
       [templateId, userId]
     );
 
     if (result.changes === 0) {
-      // This means either the template didn't exist or it didn't belong to this user.
       return res
         .status(404)
         .json({ error: "Modèle non trouvé ou non autorisé à supprimer." });
     }
 
-    // ON DELETE CASCADE in DB schema should handle related template_named_exercises and exercise_sets.
     res
       .status(200)
       .json({ message: "Modèle supprimé avec succès.", id: templateId });
-    // Or use status 204 (No Content) which is also common for DELETE:
-    // res.status(204).send();
   } catch (error) {
     console.error(
       `Error deleting template ${templateId}:`,
       error.message,
       error.stack
     );
-    res
-      .status(500)
-      .json({
-        error: "Erreur base de données lors de la suppression du modèle.",
-      });
+    res.status(500).json({
+      error: "Erreur base de données lors de la suppression du modèle.",
+    });
   }
 });
 

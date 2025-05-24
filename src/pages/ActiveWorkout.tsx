@@ -37,7 +37,8 @@ const ActiveWorkout = () => {
 
   const {
     data: history, // Local optimistic cache of history
-    setData: setHistory, // Setter for the local cache
+    setData: setLocalHistoryState, // Explicitly for local state
+    postData: postHistoryEntryToServer, // Explicitly for POSTing one entry (if ever needed from here, unlikely)
     loading: loadingHistory,
   } = useRemoteStorage<WorkoutHistory[]>({ 
     initialValue: [],
@@ -91,6 +92,26 @@ const ActiveWorkout = () => {
 
       const completedWorkout = finishWorkout(activeWorkout); // This is a WorkoutHistory object
 
+      // Add this log:
+      console.log('Submitting to POST /history:', JSON.stringify(completedWorkout, null, 2));
+      console.log('Breakdown of completedWorkout for POST /history:');
+      console.log('- ID (frontend generated for history entry):', completedWorkout.id);
+      console.log('- WorkoutID (original template ID):', completedWorkout.workoutId);
+      console.log('- Name:', completedWorkout.name);
+      console.log('- StartedAt:', completedWorkout.startedAt, '(isDate:', completedWorkout.startedAt instanceof Date, ')');
+      console.log('- FinishedAt:', completedWorkout.finishedAt, '(isDate:', completedWorkout.finishedAt instanceof Date, ')');
+      console.log('- Exercises count:', completedWorkout.exercises ? completedWorkout.exercises.length : 'undefined');
+      if (completedWorkout.exercises && completedWorkout.exercises.length > 0) {
+        completedWorkout.exercises.forEach((ex, index) => {
+          console.log(`  - Exercise ${index}: ID=${ex.id}, Name=${ex.name}, Sets count=${ex.sets ? ex.sets.length : 'undefined'}`);
+          if (ex.sets && ex.sets.length > 0) {
+            ex.sets.forEach((set, sIndex) => {
+              console.log(`    - Set ${sIndex}: ID=${set.id}, Weight=${set.weight}, Reps=${set.reps}, Completed=${set.completed}`);
+            });
+          }
+        });
+      }
+
       try {
         // N.B: The token is now handled by the useRemoteStorage hook or directly in fetch calls if not using the hook.
         // For this specific POST request, since we are not using the saveData function from useRemoteStorage,
@@ -133,7 +154,7 @@ const ActiveWorkout = () => {
         
         // Optimistically update local history state. 
         // The `useRemoteStorage` hook for history on the Index page will fetch the authoritative list.
-        setHistory([completedWorkout, ...history]); 
+        setLocalHistoryState([completedWorkout, ...history]); 
         toast.success("Séance terminée et enregistrée !");
         navigate("/");
 

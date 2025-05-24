@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Added useEffect
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,12 +30,27 @@ const Index = () => {
 
   const {
     data: history,
+    setData: setLocalHistoryStateForIndex, // Explicit name
+    postData: postHistoryEntryToServerForIndex, // Explicit name (likely unused here)
     loading: loadingHistory,
   } = useRemoteStorage<WorkoutHistory[]>({
     initialValue: [],
     endpoint: "http://localhost:3001/history",
     token: token || "",
   });
+
+  useEffect(() => {
+    if (history && Array.isArray(history) && history.length > 0) {
+      console.log("Fetched history data in Index.tsx:", JSON.stringify(history, null, 2));
+      history.forEach(item => {
+        if (!item || !item.exercises) {
+          console.warn("History item with missing or invalid exercises array:", item);
+        }
+      });
+    } else if (history) {
+      console.log("Fetched history data in Index.tsx (empty or not array):", history);
+    }
+  }, [history]);
 
   // Afficher un loader global si auth en cours ou données en chargement
   if (authLoading || loadingTemplates || loadingHistory) {
@@ -146,9 +161,13 @@ const Index = () => {
           <TabsContent value="history" className="mt-4">
             {history.length > 0 ? (
               <div className="space-y-4">
-                {history.map((workout) => (
-                  <WorkoutHistoryCard key={workout.id} workout={workout} />
-                ))}
+                {history.map((workout, index) => { // Added index for context
+                  console.log(`Rendering WorkoutHistoryCard for item at index ${index}:`, workout);
+                  if (workout && typeof workout.id !== 'string' && typeof workout.id !== 'number') {
+                    console.warn('WorkoutHistory item has missing or invalid id:', workout);
+                  }
+                  return <WorkoutHistoryCard key={workout.id} workout={workout} />;
+                })}
               </div>
             ) : (
               <div className="p-8 text-center bg-white rounded-lg shadow-sm dark:bg-zinc-900">

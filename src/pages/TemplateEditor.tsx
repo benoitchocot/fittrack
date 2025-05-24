@@ -34,7 +34,7 @@ const TemplateEditor = () => {
   });
 
   const [workout, setWorkout] = useState<WorkoutTemplate>(
-    createWorkoutTemplate("")
+    createWorkoutTemplate("Nouvelle séance")
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
@@ -102,7 +102,7 @@ const TemplateEditor = () => {
         });
     } else if (!isEditMode) {
       // Logic for creating a new template (already in place)
-      setWorkout(createWorkoutTemplate(""));
+      setWorkout(createWorkoutTemplate("Nouvelle séance"));
       setIsLoadingTemplate(false); // Ensure this is also set for new template mode
     }
   }, [id, isEditMode, isAuthenticated, authTokenFromContext, isAuthLoading, navigate]); // Key dependencies
@@ -157,6 +157,36 @@ const TemplateEditor = () => {
 
     setIsSaving(true);
 
+    // Transformation logic
+    const payloadWorkout = {
+      ...workout, // Includes main id, name, description, client-side createdAt/updatedAt
+      exercises: workout.exercises.map(ex => ({
+        ...ex, // Includes client-side exercise id
+        exercise_name: ex.name,
+        notes: ex.comment || null, // Backend 'notes' column might not exist or map to comment. PUT route uses 'notes'.
+        // Original 'name' and 'comment' are implicitly replaced if backend uses these new keys.
+        // If backend expects ONLY these new keys and no 'name'/'comment', then further cleanup is needed.
+        // For now, assume backend is tolerant or picks the explicitly named keys.
+        sets: ex.sets.map(set => ({
+          ...set, // Includes client-side set id
+          kg: set.weight,
+          // Original 'weight' is implicitly replaced if backend uses 'kg'.
+          // set_order: set.order // if applicable, ensure set.order exists
+        })),
+      })),
+    };
+    // Remove original frontend-specific fields if they cause issues with backend validation
+    // (e.g. if backend expects 'exercise_name' and errors if 'name' is also present)
+    // For now, this simplified transformation is used.
+    payloadWorkout.exercises.forEach(ex => {
+      // delete (ex as any).name; // Example: if 'name' must be removed
+      // delete (ex as any).comment; // Example: if 'comment' must be removed
+      ex.sets.forEach(set => {
+        // delete (set as any).weight; // Example: if 'weight' must be removed
+      });
+    });
+
+
     try {
       // const authToken = getToken(); // Supprimer cette ligne
       if (!isAuthenticated || !authTokenFromContext) { // Utiliser les valeurs du contexte
@@ -165,14 +195,14 @@ const TemplateEditor = () => {
         return;
       }
 
-      if (isEditMode && workout.id) { // Ensure workout.id is present for PUT
-        const response = await fetch(`http://localhost:3001/templates/${workout.id}`, {
+      if (isEditMode && payloadWorkout.id) { // Ensure payloadWorkout.id is present for PUT
+        const response = await fetch(`http://localhost:3001/templates/${payloadWorkout.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${authTokenFromContext}`, // Utiliser le token du contexte
           },
-          body: JSON.stringify(workout),
+          body: JSON.stringify(payloadWorkout),
         });
 
         if (!response.ok) {
@@ -188,13 +218,14 @@ const TemplateEditor = () => {
 
       } else if (!isEditMode) {
         // Create new template
+        console.log('Creating new template with payload:', JSON.stringify(payloadWorkout, null, 2));
         const response = await fetch("http://localhost:3001/templates", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${authTokenFromContext}`, // Utiliser le token du contexte
           },
-          body: JSON.stringify(workout),
+          body: JSON.stringify(payloadWorkout),
         });
 
         if (!response.ok) {
