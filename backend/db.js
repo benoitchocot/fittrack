@@ -56,6 +56,20 @@ db.run(`
       FOREIGN KEY(userId) REFERENCES users(id)
     )
   `);
+
+  // Add workout_details column to history table
+  db.run("ALTER TABLE history ADD COLUMN workout_details TEXT", (err) => {
+    if (err) {
+      // Check if the error is because the column already exists
+      if (err.message.includes("duplicate column name")) {
+        console.log("Column 'workout_details' already exists in 'history' table.");
+      } else {
+        console.error("Error adding 'workout_details' column to 'history' table:", err.message);
+      }
+    } else {
+      console.log("Column 'workout_details' added to 'history' table or already existed.");
+    }
+  });
   
   // template_named_exercises
   db.run(`

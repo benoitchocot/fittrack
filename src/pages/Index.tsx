@@ -40,13 +40,10 @@ const Index = () => {
   });
 
   useEffect(() => {
+    // The history.forEach loop and its console.warn have been removed.
+    // The main console.log for fetched history data is kept.
     if (history && Array.isArray(history) && history.length > 0) {
       console.log("Fetched history data in Index.tsx:", JSON.stringify(history, null, 2));
-      history.forEach(item => {
-        if (!item || !item.exercises) {
-          console.warn("History item with missing or invalid exercises array:", item);
-        }
-      });
     } else if (history) {
       console.log("Fetched history data in Index.tsx (empty or not array):", history);
     }
@@ -161,12 +158,9 @@ const Index = () => {
           <TabsContent value="history" className="mt-4">
             {history.length > 0 ? (
               <div className="space-y-4">
-                {history.map((workout, index) => { // Added index for context
-                  console.log(`Rendering WorkoutHistoryCard for item at index ${index}:`, workout);
-                  if (workout && typeof workout.id !== 'string' && typeof workout.id !== 'number') {
-                    console.warn('WorkoutHistory item has missing or invalid id:', workout);
-                  }
-                  return <WorkoutHistoryCard key={workout.id} workout={workout} />;
+                {history.map((workout) => {
+                  // Removed console.log for rendering item and the if block with console.warn for history_db_id.
+                  return <WorkoutHistoryCard key={workout.history_db_id} workout={workout} />;
                 })}
               </div>
             ) : (

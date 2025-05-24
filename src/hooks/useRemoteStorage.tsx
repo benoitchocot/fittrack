@@ -36,24 +36,10 @@ function useRemoteStorage<T>({ initialValue, endpoint }: UseRemoteStorageOptions
         }
 
         const json = await res.json();
-        if (endpoint.includes('/history')) {
-          const transformedHistory = (Array.isArray(json) ? json : []).map((rawItem: any) => {
-            const finishedDate = new Date(rawItem.logged_at || Date.now()); // Fallback for logged_at
-            // Ensure all fields required by WorkoutHistory type are present
-            return {
-              id: String(rawItem.history_db_id || `fallback_id_${Date.now()}_${Math.random()}`), // Ensure ID is a string and unique fallback
-              name: rawItem.action_summary || 'Séance terminée', // Default name
-              finishedAt: finishedDate,
-              startedAt: finishedDate, // Using finishedDate for startedAt
-              exercises: [], // Initialize as empty array as per requirement
-              workoutId: '', // Default to empty string as backend doesn't provide original template ID here
-              // description: rawItem.description || '', // If description were part of WorkoutHistory
-            };
-          });
-          setData(transformedHistory as T); // Cast to T, assuming T is WorkoutHistory[] for this path
-        } else {
-          setData(json); // For other endpoints, set data as is
-        }
+        // The conditional transformation for '/history' has been removed.
+        // setData(json) will now apply to all endpoints, including /history.
+        // This assumes the backend for /history now returns data in the correct WorkoutHistory[] format.
+        setData(json);
       } catch (err) {
         console.error(err);
         setError(err instanceof Error ? err.message : 'Impossible de charger les données');
