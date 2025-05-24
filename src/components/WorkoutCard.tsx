@@ -66,9 +66,7 @@ const WorkoutCard = ({ workout, onDelete, onStart }: WorkoutCardProps) => {
             : ""}
         </div>
         <div className="flex justify-between items-center">
-          <div className="text-xs text-muted-foreground">
-            {new Date(workout.updatedAt).toLocaleDateString("fr-FR")}
-          </div>
+
           <Button
             size="sm"
             className="bg-workout-primary hover:bg-workout-dark"

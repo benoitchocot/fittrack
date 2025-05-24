@@ -51,7 +51,7 @@ const ActiveWorkout = () => {
 
   useEffect(() => {
     if (!loadingTemplates && templates.length > 0 && id) {
-      const template = templates.find((t) => t.id === id);
+      const template = templates.find((t) => t.id === parseInt(id));
       if (template) {
         setActiveWorkout(startWorkout(template));
       } else {

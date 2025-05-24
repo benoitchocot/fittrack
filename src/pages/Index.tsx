@@ -19,7 +19,8 @@ const Index = () => {
   // Toujours appeler useRemoteStorage, en passant token vide si non dispo
   const {
     data: templates,
-    setData: setTemplates,
+    setData: setTemplatesLocally, // Renamed to reflect it's for local state
+    // postData: postNewTemplate, // Not used in Index.tsx for template creation
     loading: loadingTemplates,
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
@@ -74,7 +75,7 @@ const Index = () => {
       }
 
       const updatedTemplates = templates.filter((template) => template.id !== id);
-      setTemplates(updatedTemplates);
+      setTemplatesLocally(updatedTemplates); // This now only updates local state
       toast.success("Modèle supprimé avec succès");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";

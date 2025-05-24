@@ -20,11 +20,35 @@ export const createWorkoutTemplate = (name: string): WorkoutTemplate => {
   };
 };
 
-export const startWorkout = (template: WorkoutTemplate): ActiveWorkout => {
+export const startWorkout = (template: any): ActiveWorkout => { // Use 'any' for template if it has backend fields
+  const transformedExercises = (template.exercises || []).map((ex: any) => ({
+    // It's crucial to ensure all properties expected by the Exercise type are here.
+    // If the backend provides 'id' for exercises and sets, they must be preserved.
+    // The generateId() utility in this file is for NEW entities, not for existing ones from a template.
+    id: ex.id || generateId(), // Preserve backend ID if available, otherwise (less likely for template) generate
+    name: ex.exercise_name || ex.name || '', // Map exercise_name to name, fallback to name, then empty
+    comment: ex.notes || ex.comment,        // Map notes to comment, fallback to comment
+    sets: (ex.sets || []).map((s: any) => ({
+      id: s.id || generateId(), // Preserve backend ID for sets
+      weight: s.kg === undefined ? (s.weight === undefined ? 0 : s.weight) : s.kg, // Map kg to weight, fallback to weight, then 0
+      reps: s.reps === undefined ? 0 : s.reps, // Default reps if undefined
+      completed: s.completed === undefined ? false : !!s.completed, // Default completed if undefined
+    })),
+  }));
+
+  // Construct the base of the active workout, excluding the original exercises
+  const { exercises, ...restOfTemplate } = template;
+
   return {
-    ...template,
+    ...restOfTemplate, // Spread other template properties like id, name (template name), description
+    exercises: transformedExercises, // Use the transformed exercises
     startedAt: new Date(),
     isActive: true,
+    // Ensure WorkoutTemplate fields like createdAt, updatedAt are handled if they are part of 'template'
+    // and expected in ActiveWorkout. The types suggest ActiveWorkout extends WorkoutTemplate.
+    // If createdAt/updatedAt are strings, convert them:
+    createdAt: new Date(template.createdAt),
+    updatedAt: new Date(template.updatedAt),
   };
 };
 
