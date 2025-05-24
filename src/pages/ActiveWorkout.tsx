@@ -32,6 +32,7 @@ const ActiveWorkout = () => {
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
     endpoint: "http://localhost:3001/templates",
+    token: getToken() ?? "",
   });
 
   const {
@@ -41,6 +42,7 @@ const ActiveWorkout = () => {
   } = useRemoteStorage<WorkoutHistory[]>({ 
     initialValue: [],
     endpoint: "http://localhost:3001/history", // This endpoint now returns full WorkoutHistory objects
+    token: getToken() ?? "",
   });
 
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkoutType | null>(null);

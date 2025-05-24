@@ -9,9 +9,14 @@ import { Plus } from "lucide-react";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
 import { WorkoutTemplate, WorkoutHistory } from "@/types/workout";
 import { toast } from "sonner";
-import { getToken } from "@/utils/auth"; // Import getToken
+import { getToken } from "@/utils/auth";
+import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
+  const { token, loading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState("templates");
+
+  // Toujours appeler useRemoteStorage, en passant token vide si non dispo
   const {
     data: templates,
     setData: setTemplates,
@@ -19,6 +24,7 @@ const Index = () => {
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
     endpoint: "http://localhost:3001/templates",
+    token: token || "",
   });
 
   const {
@@ -27,9 +33,20 @@ const Index = () => {
   } = useRemoteStorage<WorkoutHistory[]>({
     initialValue: [],
     endpoint: "http://localhost:3001/history",
+    token: token || "",
   });
 
-  const [activeTab, setActiveTab] = useState("templates");
+  // Afficher un loader global si auth en cours ou données en chargement
+  if (authLoading || loadingTemplates || loadingHistory) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
+        <NavBar />
+        <div className="container px-4 py-6 text-center">
+          <p>Chargement des données...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleDeleteTemplate = async (id: string) => {
     try {
@@ -41,31 +58,25 @@ const Index = () => {
       const response = await fetch(`http://localhost:3001/templates/${id}`, {
         method: "DELETE",
         headers: {
-          "Authorization": `Bearer ${authToken}`,
+          Authorization: `Bearer ${authToken}`,
         },
       });
 
       if (!response.ok) {
-        // Attempt to parse error body, otherwise use statusText
-        let errorData = { error: `Erreur HTTP ${response.status}` }; // Default error
+        let errorData = { error: `Erreur HTTP ${response.status}` };
         try {
           errorData = await response.json();
-        } catch (e) {
-          // If parsing JSON fails, use the status text or the default message.
+        } catch {
           errorData.error = response.statusText || errorData.error;
         }
         toast.error(`Erreur serveur: ${errorData.error}`);
-        return; // Stop further execution if API call fails
+        return;
       }
 
-      // If API call is successful, then update local state
       const updatedTemplates = templates.filter((template) => template.id !== id);
-      setTemplates(updatedTemplates); // This is setData from useRemoteStorage
+      setTemplates(updatedTemplates);
       toast.success("Modèle supprimé avec succès");
-
     } catch (error) {
-      console.error("Failed to delete template via API:", error);
-      // Check if error is an instance of Error to safely access message property
       const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
       toast.error(`Erreur lors de la suppression du modèle: ${errorMessage}.`);
     }
@@ -74,17 +85,6 @@ const Index = () => {
   const handleStartWorkout = (id: string) => {
     window.location.href = `/workout/${id}`;
   };
-
-  if (loadingTemplates || loadingHistory) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
-        <NavBar />
-        <div className="container px-4 py-6 text-center">
-          <p>Chargement des données...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
