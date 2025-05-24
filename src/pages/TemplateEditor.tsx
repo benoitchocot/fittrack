@@ -21,7 +21,7 @@ import { toast } from "sonner";
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token: authTokenFromContext, isAuthenticated } = useAuth(); // Obtenir le token et l'état d'auth du contexte
+  const { token: authTokenFromContext, isAuthenticated, loading: isAuthLoading } = useAuth(); // Obtenir le token, l'état d'auth et l'état de chargement du contexte
 
   const {
     data: templates,
@@ -34,30 +34,78 @@ const TemplateEditor = () => {
   });
 
   const [workout, setWorkout] = useState<WorkoutTemplate>(
-    createWorkoutTemplate("Nouvelle séance")
+    createWorkoutTemplate("")
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
 
   const isEditMode = !!id;
 
   useEffect(() => {
-    if (isEditMode && !loading) {
-      const existingTemplate = templates.find((t) => t.id === id);
-      if (existingTemplate) {
-        setWorkout(existingTemplate);
-      } else {
-        if (!loading && templates.length > 0) {
-            toast.error("Modèle non trouvé.");
-            navigate("/"); 
-        } else if (!loading && templates.length === 0 && id) { // Should be covered by previous, but as a safeguard
-             toast.error("Aucun modèle chargé, impossible d'éditer.");
-             navigate("/");
-        }
+    // This effect handles fetching the template when in edit mode
+    if (isEditMode && id) {
+      // Wait for auth context to finish loading its state
+      if (isAuthLoading) {
+        setIsLoadingTemplate(true); // Show a loading indicator for the template data
+        return; // Do nothing further until auth state is resolved
       }
+
+      // Auth state is resolved, now check if authenticated
+      if (!isAuthenticated || !authTokenFromContext) {
+        toast.error("Authentification requise pour charger le modèle.");
+        setIsLoadingTemplate(false);
+        navigate("/");
+        return;
+      }
+
+      // If authenticated, proceed to fetch the template data
+      setIsLoadingTemplate(true);
+      fetch(`http://localhost:3001/templates/${id}`, {
+        headers: {
+          Authorization: `Bearer ${authTokenFromContext}`,
+        },
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: "Erreur serveur inconnue" }));
+            throw new Error(errorData.error || `Erreur ${response.status} lors de la récupération du modèle`);
+          }
+          return response.json();
+        })
+        .then((rawTemplate: any) => { // rawTemplate is from the backend
+          // Apply transformations (as implemented in previous steps)
+          const transformedExercises = (rawTemplate.exercises || []).map((ex: any) => ({
+            ...ex,
+            name: ex.exercise_name,
+            comment: ex.notes,
+            sets: (ex.sets || []).map((s: any) => ({
+              ...s,
+              weight: s.kg,
+            })),
+          }));
+          const transformedTemplate: WorkoutTemplate = {
+            ...rawTemplate,
+            exercises: transformedExercises,
+            // Ensure createdAt and updatedAt are Date objects
+            createdAt: new Date(rawTemplate.createdAt),
+            updatedAt: new Date(rawTemplate.updatedAt),
+          };
+          setWorkout(transformedTemplate);
+        })
+        .catch((error) => {
+          console.error("Failed to load template:", error);
+          toast.error(error.message || "Échec du chargement du modèle.");
+          navigate("/");
+        })
+        .finally(() => {
+          setIsLoadingTemplate(false);
+        });
     } else if (!isEditMode) {
-      setWorkout(createWorkoutTemplate("Nouvelle séance"));
+      // Logic for creating a new template (already in place)
+      setWorkout(createWorkoutTemplate(""));
+      setIsLoadingTemplate(false); // Ensure this is also set for new template mode
     }
-  }, [id, isEditMode, templates, loading, navigate]);
+  }, [id, isEditMode, isAuthenticated, authTokenFromContext, isAuthLoading, navigate]); // Key dependencies
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setWorkout({ ...workout, name: e.target.value });
@@ -171,18 +219,22 @@ const TemplateEditor = () => {
     }
   };
 
-  if (loading) {
+  // Adjusted loading condition
+  if ((loading && !isEditMode) || (isLoadingTemplate && isEditMode)) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
         <NavBar />
         <div className="container px-4 py-6 text-center">
-          <p>Chargement des modèles...</p>
+          <p>Chargement {isEditMode ? "du modèle" : "des modèles"}...</p>
         </div>
       </div>
     );
   }
   
-  if (error) {
+  // Error from useRemoteStorage (e.g. if templates list fails to load, but we might still edit if direct fetch works)
+  // Consider how to handle this. For now, if there's a general error and we're not in edit mode, show it.
+  // If in edit mode, the direct fetch error handling inside useEffect is more specific.
+  if (error && !isEditMode) { // Only show general error if not in edit mode or if specific template load hasn't started/failed
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
         <NavBar />
