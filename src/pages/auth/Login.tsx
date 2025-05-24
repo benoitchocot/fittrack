@@ -27,7 +27,7 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:3001/auth/login", {
+      const res = await fetch("https://apimuscu.chocot.be/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

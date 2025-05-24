@@ -31,7 +31,7 @@ const ActiveWorkout = () => {
     loading: loadingTemplates,
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
-    endpoint: "http://localhost:3001/templates",
+    endpoint: "https://apimuscu.chocot.be/templates",
     token: getToken() ?? "",
   });
 
@@ -42,7 +42,7 @@ const ActiveWorkout = () => {
     loading: loadingHistory,
   } = useRemoteStorage<WorkoutHistory[]>({ 
     initialValue: [],
-    endpoint: "http://localhost:3001/history", // This endpoint now returns full WorkoutHistory objects
+    endpoint: "https://apimuscu.chocot.be/history", // This endpoint now returns full WorkoutHistory objects
     token: getToken() ?? "",
   });
 
@@ -130,7 +130,7 @@ const ActiveWorkout = () => {
           toast.error("Utilisateur non authentifié. Impossible de sauvegarder l'historique.");
           return; // Prevent fetch if no token
         }
-        const response = await fetch("http://localhost:3001/history", {
+        const response = await fetch("https://apimuscu.chocot.be/history", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -30,7 +30,7 @@ const TemplateEditor = () => {
     error,
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
-    endpoint: "http://localhost:3001/templates",
+    endpoint: "https://apimuscu.chocot.be/templates",
   });
 
   const [workout, setWorkout] = useState<WorkoutTemplate>(
@@ -60,7 +60,7 @@ const TemplateEditor = () => {
 
       // If authenticated, proceed to fetch the template data
       setIsLoadingTemplate(true);
-      fetch(`http://localhost:3001/templates/${id}`, {
+      fetch(`https://apimuscu.chocot.be/templates/${id}`, {
         headers: {
           Authorization: `Bearer ${authTokenFromContext}`,
         },
@@ -196,7 +196,7 @@ const TemplateEditor = () => {
       }
 
       if (isEditMode && payloadWorkout.id) { // Ensure payloadWorkout.id is present for PUT
-        const response = await fetch(`http://localhost:3001/templates/${payloadWorkout.id}`, {
+        const response = await fetch(`https://apimuscu.chocot.be/${payloadWorkout.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -219,7 +219,7 @@ const TemplateEditor = () => {
       } else if (!isEditMode) {
         // Create new template
         console.log('Creating new template with payload:', JSON.stringify(payloadWorkout, null, 2));
-        const response = await fetch("http://localhost:3001/templates", {
+        const response = await fetch("https://apimuscu.chocot.be/templates", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
