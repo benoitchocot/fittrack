@@ -34,7 +34,7 @@ const TemplateEditor = () => {
   });
 
   const [workout, setWorkout] = useState<WorkoutTemplate>(
-    createWorkoutTemplate("Nouvelle séance")
+    createWorkoutTemplate("")
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
@@ -102,7 +102,7 @@ const TemplateEditor = () => {
         });
     } else if (!isEditMode) {
       // Logic for creating a new template (already in place)
-      setWorkout(createWorkoutTemplate("Nouvelle séance"));
+      setWorkout(createWorkoutTemplate(""));
       setIsLoadingTemplate(false); // Ensure this is also set for new template mode
     }
   }, [id, isEditMode, isAuthenticated, authTokenFromContext, isAuthLoading, navigate]); // Key dependencies
