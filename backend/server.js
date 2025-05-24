@@ -28,7 +28,6 @@ app.use(bodyParser.json());
 app.use("/templates", templatesRoutes);
 app.use("/history", historyRoutes);
 app.use("/auth", authRoutes);
-app.options('*', cors()); // pour répondre aux preflight requests
 
 app.listen(PORT, () => {
   console.log(`✅ API listening at http://localhost:${PORT}`);
