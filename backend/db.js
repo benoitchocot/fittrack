@@ -41,6 +41,7 @@ db.run(`
     CREATE TABLE IF NOT EXISTS templates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
+      userId INTEGER,
       description TEXT
     )
   `);
@@ -53,6 +54,29 @@ db.run(`
       action TEXT,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(userId) REFERENCES users(id)
+    )
+  `);
+  
+  // template_named_exercises
+  db.run(`
+    CREATE TABLE IF NOT EXISTS template_named_exercises (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      template_id INTEGER,
+      exercise_name TEXT,
+      notes TEXT,
+      order_num INTEGER
+    )
+  `);
+
+  // exercise_sets
+  db.run(`
+    CREATE TABLE IF NOT EXISTS exercise_sets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      template_named_exercise_id INTEGER,
+      set_order INTEGER,
+      kg INTEGER,
+      reps INTEGER,
+      completed BOOLEAN DEFAULT 0 
     )
   `);
 });
