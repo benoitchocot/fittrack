@@ -1,5 +1,3 @@
-const BASE_URL = 'https://apimuscu.chocot.be/';
-
 module.exports = {
-  BASE_URL,
+  JWT_SECRET: "ton_secret_pour_jwt_super_secret", // change ça en prod !
 };
