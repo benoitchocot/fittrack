@@ -12,17 +12,18 @@ import {
 import NavBar from "@/components/NavBar";
 import ExerciseForm from "@/components/ExerciseForm";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
-import { getToken } from "@/utils/auth"; // Import getToken
+import { getToken } from "@/utils/auth";
 import { WorkoutTemplate, ActiveWorkout as ActiveWorkoutType, Exercise, WorkoutHistory } from "@/types/workout";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { getPausedWorkout, savePausedWorkout, clearPausedWorkout } from "@/utils/pausedWorkoutStorage"; // Corrected path
+import { ArrowLeft, CheckCircle2, Play, Pause } from "lucide-react"; // Added Play and Pause icons
 import {
   startWorkout,
   updateExercise,
   finishWorkout,
 } from "@/services/workoutService";
 import { toast } from "sonner";
-import BASE_URL from "../config" // Ensure this is defined in your constants
-// Ensure you have the correct import for BASE_URL
+import BASE_URL from "@/config"; // Assuming BASE_URL is defined in config
+
 const ActiveWorkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ const ActiveWorkout = () => {
     loading: loadingTemplates,
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
-    endpoint: BASE_URL,
+    endpoint: `${BASE_URL}templates`, // Use BASE_URL for consistency
     token: getToken() ?? "",
   });
 
@@ -50,29 +51,104 @@ const ActiveWorkout = () => {
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkoutType | null>(null);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [showConfirmNewWorkoutDialog, setShowConfirmNewWorkoutDialog] = useState(false);
+  const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
+
 
   useEffect(() => {
-    if (!loadingTemplates && templates.length > 0 && id) {
+    const pausedWorkout = getPausedWorkout();
+    if (pausedWorkout) {
+      setActiveWorkout(pausedWorkout);
+      if (pausedWorkout.isPaused && pausedWorkout.elapsedTimeBeforePause) {
+        setElapsedTime(pausedWorkout.elapsedTimeBeforePause);
+      } else if (pausedWorkout.elapsedTimeBeforePause) {
+        // Resumed but tab closed, calculate time since it was "resumed" (unpaused)
+        const timeSinceUnpaused = pausedWorkout.pausedAt ? (new Date().getTime() - new Date(pausedWorkout.pausedAt).getTime()) / 1000 : 0;
+        setElapsedTime(Math.floor(pausedWorkout.elapsedTimeBeforePause + timeSinceUnpaused));
+      } else {
+        // No pause info, just calculate from start
+        const start = new Date(pausedWorkout.startedAt).getTime();
+        const now = new Date().getTime();
+        setElapsedTime(Math.floor((now - start) / 1000));
+      }
+
+      // If there's a paused workout, and user is trying to load a new one via URL
+      if (id && (!pausedWorkout.id || parseInt(id) !== pausedWorkout.id)) {
+         // Check if the id from URL matches the paused workout's template id
+         // Assuming WorkoutTemplate's id is a number and ActiveWorkout's id (from WorkoutTemplate) is also a number
+        const templateIdFromUrl = parseInt(id);
+        if (templateIdFromUrl !== pausedWorkout.id) { // If URL id is different from paused workout's template id
+            const template = templates.find((t) => t.id === templateIdFromUrl);
+            if (template) {
+                setPendingTemplate(template);
+                setShowConfirmNewWorkoutDialog(true);
+            }
+        }
+      }
+    } else if (!loadingTemplates && templates.length > 0 && id) {
+      // No paused workout, try to load from template ID
       const template = templates.find((t) => t.id === parseInt(id));
       if (template) {
         setActiveWorkout(startWorkout(template));
+        // Timer for new workout will start in the next useEffect
       } else {
         navigate("/");
         toast.error("Modèle de séance introuvable");
       }
     }
-  }, [id, templates, loadingTemplates, navigate]);
+  }, [id, templates, loadingTemplates, navigate]); // Removed activeWorkout from deps to avoid loop
 
+  // Timer logic
   useEffect(() => {
-    if (activeWorkout) {
-      const interval = setInterval(() => {
-        const start = new Date(activeWorkout.startedAt).getTime();
-        const now = new Date().getTime();
-        setElapsedTime(Math.floor((now - start) / 1000));
+    let interval: NodeJS.Timeout | null = null;
+    if (activeWorkout && !activeWorkout.isPaused) {
+      interval = setInterval(() => {
+        // If elapsedTimeBeforePause exists, it means we've paused at least once.
+        // The timer should continue from where it left off.
+        // startedAt is adjusted on resume to simplify this.
+        const startMs = new Date(activeWorkout.startedAt).getTime();
+        const nowMs = Date.now();
+        setElapsedTime(Math.floor((nowMs - startMs) / 1000));
+
       }, 1000);
-      return () => clearInterval(interval);
     }
-  }, [activeWorkout]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeWorkout, activeWorkout?.isPaused, activeWorkout?.startedAt]);
+
+
+  const handlePauseWorkout = () => {
+    if (activeWorkout) {
+      const updatedPausedWorkout: ActiveWorkoutType = {
+        ...activeWorkout,
+        isPaused: true,
+        pausedAt: new Date(),
+        elapsedTimeBeforePause: elapsedTime,
+      };
+      setActiveWorkout(updatedPausedWorkout);
+      savePausedWorkout(updatedPausedWorkout);
+      toast.info("Séance mise en pause.");
+      // Optionally navigate away, e.g., navigate("/");
+    }
+  };
+
+  const handleResumeWorkout = () => {
+    if (activeWorkout && activeWorkout.isPaused) {
+      // Adjust startedAt to make the timer continue correctly from elapsedTimeBeforePause
+      const newStartedAt = new Date(Date.now() - (activeWorkout.elapsedTimeBeforePause || 0) * 1000);
+      const updatedResumedWorkout: ActiveWorkoutType = {
+        ...activeWorkout,
+        isPaused: false,
+        startedAt: newStartedAt, 
+        pausedAt: undefined, 
+        // elapsedTimeBeforePause remains as a record of the last pause point
+      };
+      setActiveWorkout(updatedResumedWorkout);
+      savePausedWorkout(updatedResumedWorkout); // Save resumed state
+      toast.success("Séance reprise !");
+    }
+  };
 
   const handleExerciseUpdate = (updatedExercise: Exercise) => {
     if (activeWorkout) {
@@ -126,12 +202,12 @@ const ActiveWorkout = () => {
         // assuming it will be handled by a global fetch interceptor or similar, or needs to be
         // refactored to use `getToken()` from `src/utils/auth.ts`.
         // To be safe and ensure this POST continues to work, I will add getToken() here.
-        const authToken = getToken(); // Use getToken from auth utils
+        const authToken = getToken(); 
         if (!authToken) {
           toast.error("Utilisateur non authentifié. Impossible de sauvegarder l'historique.");
-          return; // Prevent fetch if no token
+          return; 
         }
-        const response = await fetch(BASE_URL, {
+        const response = await fetch(`${BASE_URL}history`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -153,9 +229,9 @@ const ActiveWorkout = () => {
           return; 
         }
         
-        // Optimistically update local history state. 
-        // The `useRemoteStorage` hook for history on the Index page will fetch the authoritative list.
-        setLocalHistoryState([completedWorkout, ...history]); 
+        // Optimistically update local history state.
+        setLocalHistoryState([completedWorkout, ...history]);
+        clearPausedWorkout(); // Clear any paused workout from localStorage
         toast.success("Séance terminée et enregistrée !");
         navigate("/");
 
@@ -185,7 +261,12 @@ const ActiveWorkout = () => {
             <Button
               variant="ghost"
               className="mb-2"
-              onClick={() => setFinishDialogOpen(true)}
+                onClick={() => {
+                  // If workout is active and not paused, pause it before showing quit dialog
+                  // Or, let the dialog handle options: Pause & Quit, Finish, Continue
+                  // For now, just open dialog. The dialog could be enhanced.
+                  setFinishDialogOpen(true);
+                }}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quitter
@@ -194,9 +275,26 @@ const ActiveWorkout = () => {
           </div>
           <div className="text-right">
             <div className="text-muted-foreground text-sm">Durée</div>
-            <div className="text-lg font-bold">{formatTime(elapsedTime)}</div>
+              <div className="text-lg font-bold">
+                {activeWorkout.isPaused ? formatTime(activeWorkout.elapsedTimeBeforePause || 0) : formatTime(elapsedTime)}
+              </div>
           </div>
         </div>
+
+          {/* Pause/Resume Buttons */}
+          <div className="mb-4 flex justify-center space-x-4">
+            {activeWorkout.isPaused ? (
+              <Button onClick={handleResumeWorkout} size="lg" className="bg-blue-500 hover:bg-blue-600">
+                <Play className="w-5 h-5 mr-2" />
+                Reprendre
+              </Button>
+            ) : (
+              <Button onClick={handlePauseWorkout} size="lg" variant="outline" className="border-yellow-500 text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600">
+                <Pause className="w-5 h-5 mr-2" />
+                Mettre en pause
+              </Button>
+            )}
+          </div>
 
         <div className="space-y-4 mb-6">
           {activeWorkout.exercises.map((exercise) => (
@@ -205,7 +303,7 @@ const ActiveWorkout = () => {
               exercise={exercise}
               onUpdate={handleExerciseUpdate}
               onDelete={() => { /* onDelete is not implemented */ }}
-              isActive={true}
+                isActive={!activeWorkout.isPaused} // Disable form if paused
             />
           ))}
         </div>
@@ -215,6 +313,7 @@ const ActiveWorkout = () => {
             size="lg"
             onClick={() => setFinishDialogOpen(true)}
             className="bg-green-600 hover:bg-green-700"
+              disabled={activeWorkout.isPaused} // Disable finish if paused
           >
             <CheckCircle2 className="w-5 h-5 mr-2" />
             Terminer la séance
@@ -236,13 +335,80 @@ const ActiveWorkout = () => {
               onClick={() => setFinishDialogOpen(false)}
               className="sm:flex-1"
             >
-              Continuer la séance
+              {activeWorkout?.isPaused ? "Retour à la séance (en pause)" : "Continuer la séance"}
             </Button>
+            {/* New "Pause and Quit" button in dialog */}
+            {!activeWorkout?.isPaused && (
+                 <Button
+                    variant="outline"
+                    onClick={() => {
+                        handlePauseWorkout();
+                        setFinishDialogOpen(false);
+                        navigate("/"); // Navigate to home after pausing
+                    }}
+                    className="sm:flex-1 border-orange-500 text-orange-500 hover:bg-orange-50"
+                    >
+                    Mettre en Pause et Quitter
+                </Button>
+            )}
             <Button
               onClick={handleFinishWorkout}
               className="sm:flex-1 bg-green-600 hover:bg-green-700"
+              disabled={activeWorkout?.isPaused} // Also disable here if paused
             >
               Terminer et enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog for confirming new workout when one is paused */}
+      <Dialog open={showConfirmNewWorkoutDialog} onOpenChange={setShowConfirmNewWorkoutDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Séance en pause existante</DialogTitle>
+            <DialogDescription>
+              Vous avez une séance en pause. Commencer une nouvelle séance abandonnera la séance en pause. Continuer ?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowConfirmNewWorkoutDialog(false);
+                setPendingTemplate(null);
+                // If user cancels, navigate to the active paused workout (if ID is not in URL)
+                // or stay if URL already points to it (or no ID in URL means it's the paused one)
+                if (activeWorkout && id && parseInt(id) !== activeWorkout.id) {
+                     navigate(`/active-workout`); // Navigate to generic active page for paused one
+                } else if (!id && activeWorkout) {
+                    // Already on generic /active-workout, do nothing to URL
+                } else {
+                    navigate('/'); // Fallback
+                }
+              }}
+              className="sm:flex-1"
+            >
+              Annuler (garder la séance en pause)
+            </Button>
+            <Button
+              onClick={() => {
+                if (pendingTemplate) {
+                  clearPausedWorkout(); // Clear old paused workout
+                  const newWorkout = startWorkout(pendingTemplate);
+                  setActiveWorkout(newWorkout);
+                  setElapsedTime(0); // Reset timer for new workout
+                  // Navigate to the new workout's specific URL if not already there
+                  if (id !== String(pendingTemplate.id)) {
+                    navigate(`/active-workout/${pendingTemplate.id}`, { replace: true });
+                  }
+                }
+                setShowConfirmNewWorkoutDialog(false);
+                setPendingTemplate(null);
+              }}
+              className="sm:flex-1"
+            >
+              Commencer une nouvelle séance
             </Button>
           </DialogFooter>
         </DialogContent>

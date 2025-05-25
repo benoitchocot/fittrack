@@ -26,6 +26,9 @@ export interface ActiveWorkout extends WorkoutTemplate {
   startedAt: Date;
   finishedAt?: Date;
   isActive: boolean;
+  isPaused?: boolean;
+  pausedAt?: Date;
+  elapsedTimeBeforePause?: number;
   // Potentially other fields like description if they are part of what's saved
 }
 
