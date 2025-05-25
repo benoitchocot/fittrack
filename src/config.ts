@@ -1,4 +1,4 @@
-const BASE_URL = 'https://localhost:3001/';
+const BASE_URL = 'https://apimuscu.chocot.be/';
 
 
 export default BASE_URL;
