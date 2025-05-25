@@ -322,7 +322,7 @@ const ActiveWorkout = () => {
       </div>
 
       <Dialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Terminer la séance ?</DialogTitle>
             <DialogDescription>
