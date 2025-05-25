@@ -9,7 +9,7 @@ const authRoutes = require("./routes/auth");
 const app = express();
 const PORT = 3001;
 
-const allowedOrigins = ['https://muscu.chocot.be'];
+const allowedOrigins = ['https://muscu.chocot.be', 'localhost:8080'];
 
 app.use(cors({
   origin: function (origin, callback) {
