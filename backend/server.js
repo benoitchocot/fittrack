@@ -9,7 +9,7 @@ const authRoutes = require("./routes/auth");
 const app = express();
 const PORT = 3001;
 
-const allowedOrigins = ['https://muscu.chocot.be', 'http://localhost:8080'];
+const allowedOrigins = ['https://muscu.chocot.be'];
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -28,7 +28,3 @@ app.use(bodyParser.json());
 app.use("/templates", templatesRoutes);
 app.use("/history", historyRoutes);
 app.use("/auth", authRoutes);
-
-app.listen(PORT, () => {
-  console.log(`✅ API listening at http://localhost:${PORT}`);
-});
