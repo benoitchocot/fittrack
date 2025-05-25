@@ -329,7 +329,7 @@ const ActiveWorkout = () => {
               Voulez-vous terminer et enregistrer cette séance d'entraînement ?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setFinishDialogOpen(false)}
@@ -346,14 +346,14 @@ const ActiveWorkout = () => {
                         setFinishDialogOpen(false);
                         navigate("/"); // Navigate to home after pausing
                     }}
-                    className="sm:flex-1 border-orange-500 text-orange-500 hover:bg-orange-50"
+                    className="border-orange-500 text-orange-500 hover:bg-orange-50"
                     >
                     Mettre en Pause et Quitter
                 </Button>
             )}
             <Button
               onClick={handleFinishWorkout}
-              className="sm:flex-1 bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700"
               disabled={activeWorkout?.isPaused} // Also disable here if paused
             >
               Terminer et enregistrer
@@ -371,7 +371,7 @@ const ActiveWorkout = () => {
               Vous avez une séance en pause. Commencer une nouvelle séance abandonnera la séance en pause. Continuer ?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -387,7 +387,7 @@ const ActiveWorkout = () => {
                     navigate('/'); // Fallback
                 }
               }}
-              className="sm:flex-1"
+              // className="sm:flex-1" // Removed for consistency, though this dialog might have different needs
             >
               Annuler (garder la séance en pause)
             </Button>
@@ -406,7 +406,7 @@ const ActiveWorkout = () => {
                 setShowConfirmNewWorkoutDialog(false);
                 setPendingTemplate(null);
               }}
-              className="sm:flex-1"
+              // className="sm:flex-1" // Removed for consistency
             >
               Commencer une nouvelle séance
             </Button>
