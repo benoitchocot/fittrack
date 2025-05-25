@@ -44,21 +44,6 @@ const NavBar = () => {
           )}
         </div>
       </div>
-
-      <div className="container sm:hidden">
-        <div className="grid grid-cols-2 border-t">
-          <NavLink href="/" current={location.pathname === "/"} mobile>
-            Accueil
-          </NavLink>
-          <NavLink
-            href="/templates"
-            current={location.pathname.includes("/templates")}
-            mobile
-          >
-            Modèles
-          </NavLink>
-        </div>
-      </div>
     </nav>
   );
 };
