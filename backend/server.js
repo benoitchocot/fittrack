@@ -9,7 +9,7 @@ const authRoutes = require("./routes/auth");
 const app = express();
 const PORT = 3001;
 
-const allowedOrigins = ['https://muscu.chocot.be', 'http://localhost:8080'];
+const allowedOrigins = ['https://muscu.chocot.be'];
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -19,8 +19,11 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
+
 
 // Si tu utilises des requêtes avec Content-Type: application/json
 app.use(bodyParser.json());
@@ -28,3 +31,6 @@ app.use(bodyParser.json());
 app.use("/templates", templatesRoutes);
 app.use("/history", historyRoutes);
 app.use("/auth", authRoutes);
+app.listen(PORT, () => {
+  console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
+});
