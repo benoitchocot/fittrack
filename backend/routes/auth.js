@@ -23,7 +23,20 @@ router.post("/register", async (req, res) => {
         }
         return res.status(500).json({ error: "Erreur lors de l'inscription" });
       }
-      res.json({ success: true, userId: this.lastID });
+      const userId = this.lastID;
+      const tokenPayload = { userId };
+      const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: "1d" });
+
+      res.json({
+        success: true,
+        token,
+        user: {
+          id: userId,
+          firstName,
+          lastName,
+          email,
+        },
+      });
     });
     stmt.finalize();
   } catch (error) {
@@ -37,7 +50,7 @@ router.post("/login", (req, res) => {
   // La logique originale ci-dessous est maintenant active.
 
   const { email, password } = req.body;
-  console.log("[LOGIN ATTEMPT] Email:", email); 
+  console.log("[LOGIN ATTEMPT] Email:", email);
 
   if (!email || !password) {
     console.log("[LOGIN FAIL] Email ou mot de passe manquant");
@@ -47,7 +60,9 @@ router.post("/login", (req, res) => {
   db.get("SELECT * FROM users WHERE email = ?", [email], async (err, user) => {
     if (err) {
       console.error("[LOGIN DB ERROR]", err.message);
-      return res.status(500).json({ error: "Erreur serveur lors recherche utilisateur" });
+      return res
+        .status(500)
+        .json({ error: "Erreur serveur lors recherche utilisateur" });
     }
     if (!user) {
       console.log("[LOGIN FAIL] Utilisateur non trouvé:", email);
@@ -59,7 +74,10 @@ router.post("/login", (req, res) => {
     try {
       const match = await bcrypt.compare(password, user.password);
       if (!match) {
-        console.log("[LOGIN FAIL] Mot de passe incorrect pour utilisateur:", email);
+        console.log(
+          "[LOGIN FAIL] Mot de passe incorrect pour utilisateur:",
+          email
+        );
         return res.status(400).json({ error: "Mot de passe incorrect" });
       }
 
@@ -67,29 +85,36 @@ router.post("/login", (req, res) => {
 
       const tokenPayload = { userId: user.id };
       console.log("[LOGIN JWT PAYLOAD]", tokenPayload);
-      console.log("[LOGIN JWT SECRET]", JWT_SECRET ? "SECRET PRESENT" : "SECRET MANQUANT OU VIDE");
+      console.log(
+        "[LOGIN JWT SECRET]",
+        JWT_SECRET ? "SECRET PRESENT" : "SECRET MANQUANT OU VIDE"
+      );
 
       const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: "1d" });
       console.log("[LOGIN TOKEN CREATED]", token);
 
-      const responsePayload = { 
-        token, 
-        user: { 
-          id: user.id, 
-          firstName: user.firstName, 
-          lastName: user.lastName, 
-          email: user.email 
-        } 
+      const responsePayload = {
+        token,
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+        },
       };
-      console.log("[LOGIN RESPONSE PAYLOAD]", JSON.stringify(responsePayload)); 
+      console.log("[LOGIN RESPONSE PAYLOAD]", JSON.stringify(responsePayload));
 
       res.json(responsePayload);
-      console.log("[LOGIN RESPONSE SENT] Pour utilisateur:", email); 
-
+      console.log("[LOGIN RESPONSE SENT] Pour utilisateur:", email);
     } catch (e) {
       console.error("[LOGIN ASYNC/SIGNING ERROR]", e.message, e.stack);
       if (!res.headersSent) {
-        res.status(500).json({ error: "Erreur interne lors de la création du token ou comparaison mot de passe" });
+        res
+          .status(500)
+          .json({
+            error:
+              "Erreur interne lors de la création du token ou comparaison mot de passe",
+          });
       }
     }
   });

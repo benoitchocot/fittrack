@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import {
   Card,
   CardContent,
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import BASE_URL from "@/config"; // Assurez-vous que le chemin est correct
 
 const Register = () => {
   const [firstName, setFirstName] = useState("");
@@ -21,6 +23,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +34,7 @@ const Register = () => {
     }
 
     try {
-      const res = await fetch("https://apimuscu.chocot.be/auth/register", {
+      const res = await fetch(`${BASE_URL}auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -49,9 +52,13 @@ const Register = () => {
       }
 
       const data = await res.json();
-      localStorage.setItem("token", data.token);
-      toast.success("Compte créé avec succès !");
-      navigate("/");
+      if (data.token) {
+        login(data.token);
+        toast.success("Compte créé avec succès !");
+        navigate("/");
+      } else {
+        toast.error(data.error || "Erreur lors de la finalisation de l'inscription.");
+      }
     } catch (error) {
       toast.error("Erreur réseau");
     }
@@ -119,14 +126,16 @@ const Register = () => {
                   required
                 />
               </div>
-              <div className="flex items-start space-x-2">
-                <input
-                  type="checkbox"
+              <div className="flex items-center space-x-2"> 
+                <Checkbox
                   id="terms"
                   checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
                 />
-                <label htmlFor="terms">
+                <label
+                  htmlFor="terms"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
                   J'accepte les conditions d'utilisation
                 </label>
               </div>

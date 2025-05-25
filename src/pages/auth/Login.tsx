@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 // import { setToken } from "@/utils/auth"; // Supprimé
 import { useAuth } from "@/context/AuthContext"; // Import useAuth
-
+import BASE_URL from "@/config"; // Assurez-vous que le chemin est correct
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -27,7 +27,7 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch("https://apimuscu.chocot.be/auth/login", {
+      const res = await fetch(`${BASE_URL}auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

@@ -11,7 +11,7 @@ import { WorkoutTemplate, WorkoutHistory } from "@/types/workout";
 import { toast } from "sonner";
 import { getToken } from "@/utils/auth";
 import { useAuth } from "@/context/AuthContext";
-
+import BASE_URL from "../config"
 const Index = () => {
   const { token, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("templates");
@@ -24,7 +24,7 @@ const Index = () => {
     loading: loadingTemplates,
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
-    endpoint: "https://apimuscu.chocot.be/templates",
+    endpoint: `${BASE_URL}templates`,
     token: token || "",
   });
 
@@ -35,7 +35,7 @@ const Index = () => {
     loading: loadingHistory,
   } = useRemoteStorage<WorkoutHistory[]>({
     initialValue: [],
-    endpoint: "https://apimuscu.chocot.be/history",
+    endpoint: `${BASE_URL}history`,
     token: token || "",
   });
 
@@ -68,7 +68,7 @@ const Index = () => {
         toast.error("Utilisateur non authentifié. Impossible de supprimer le modèle.");
         return;
       }
-      const response = await fetch(`https://apimuscu.chocot.be/templates/${id}`, {
+      const response = await fetch(`${BASE_URL}templates/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${authToken}`,

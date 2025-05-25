@@ -21,7 +21,8 @@ import {
   finishWorkout,
 } from "@/services/workoutService";
 import { toast } from "sonner";
-
+import BASE_URL from "../config" // Ensure this is defined in your constants
+// Ensure you have the correct import for BASE_URL
 const ActiveWorkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const ActiveWorkout = () => {
     loading: loadingTemplates,
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
-    endpoint: "https://apimuscu.chocot.be/templates",
+    endpoint: BASE_URL,
     token: getToken() ?? "",
   });
 
@@ -42,7 +43,7 @@ const ActiveWorkout = () => {
     loading: loadingHistory,
   } = useRemoteStorage<WorkoutHistory[]>({ 
     initialValue: [],
-    endpoint: "https://apimuscu.chocot.be/history", // This endpoint now returns full WorkoutHistory objects
+    endpoint: `${BASE_URL}history`, // This endpoint now returns full WorkoutHistory objects
     token: getToken() ?? "",
   });
 
@@ -130,7 +131,7 @@ const ActiveWorkout = () => {
           toast.error("Utilisateur non authentifié. Impossible de sauvegarder l'historique.");
           return; // Prevent fetch if no token
         }
-        const response = await fetch("https://apimuscu.chocot.be/history", {
+        const response = await fetch(BASE_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

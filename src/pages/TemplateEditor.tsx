@@ -17,7 +17,7 @@ import {
   removeExercise,
 } from "@/services/workoutService";
 import { toast } from "sonner";
-
+import BASE_URL from "../config";
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ const TemplateEditor = () => {
     error,
   } = useRemoteStorage<WorkoutTemplate[]>({
     initialValue: [],
-    endpoint: "https://apimuscu.chocot.be/templates",
+    endpoint: `${BASE_URL}templates`,
   });
 
   const [workout, setWorkout] = useState<WorkoutTemplate>(
@@ -60,7 +60,7 @@ const TemplateEditor = () => {
 
       // If authenticated, proceed to fetch the template data
       setIsLoadingTemplate(true);
-      fetch(`https://apimuscu.chocot.be/templates/${id}`, {
+      fetch(`${BASE_URL}templates/${id}`, {
         headers: {
           Authorization: `Bearer ${authTokenFromContext}`,
         },
@@ -196,7 +196,7 @@ const TemplateEditor = () => {
       }
 
       if (isEditMode && payloadWorkout.id) { // Ensure payloadWorkout.id is present for PUT
-        const response = await fetch(`https://apimuscu.chocot.be/${payloadWorkout.id}`, {
+        const response = await fetch(`${BASE_URL}${payloadWorkout.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -219,7 +219,7 @@ const TemplateEditor = () => {
       } else if (!isEditMode) {
         // Create new template
         console.log('Creating new template with payload:', JSON.stringify(payloadWorkout, null, 2));
-        const response = await fetch("https://apimuscu.chocot.be/templates", {
+        const response = await fetch(`${BASE_URL}templates`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
