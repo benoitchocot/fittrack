@@ -95,17 +95,3 @@
   .workout-card-accent {
     @apply absolute top-0 left-0 w-full h-1 bg-workout-primary;
   }
-
-  .drag-handle {
-    @apply flex items-center justify-center p-2 mr-2 rounded cursor-grab;
-    /* p-2 is p-0.5rem (8px), mr-2 is m-0.5rem (8px) */
-  }
-
-  .drag-handle:hover {
-    @apply bg-gray-100; /* Light mode hover */
-  }
-
-  .dark .drag-handle:hover {
-    @apply bg-zinc-700; /* Dark mode hover */
-  }
-}
