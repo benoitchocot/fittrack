@@ -1,15 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"; // Added Card components
+import { Input } from "@/components/ui/input"; // Added Input component
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card"; // Added Card components
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WorkoutCard from "@/components/WorkoutCard";
 import WorkoutHistoryCard from "@/components/WorkoutHistoryCard";
 import NavBar from "@/components/NavBar";
 import { Plus } from "lucide-react";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
-import { WorkoutTemplate, WorkoutHistory, ActiveWorkout as ActiveWorkoutType } from "@/types/workout"; // Added ActiveWorkoutType
-import { getPausedWorkout, clearPausedWorkout } from "@/utils/pausedWorkoutStorage"; // Added paused workout utils
+import {
+  WorkoutTemplate,
+  WorkoutHistory,
+  ActiveWorkout as ActiveWorkoutType,
+} from "@/types/workout"; // Added ActiveWorkoutType
+import {
+  getPausedWorkout,
+  clearPausedWorkout,
+} from "@/utils/pausedWorkoutStorage"; // Added paused workout utils
 import { toast } from "sonner";
 import { getToken } from "@/utils/auth";
 import { useAuth } from "@/context/AuthContext";
@@ -19,7 +33,10 @@ const Index = () => {
   const { token, loading: authLoading } = useAuth();
   const navigate = useNavigate(); // Added useNavigate
   const [activeTab, setActiveTab] = useState("templates");
-  const [pausedWorkout, setPausedWorkout] = useState<ActiveWorkoutType | null>(null);
+  const [pausedWorkout, setPausedWorkout] = useState<ActiveWorkoutType | null>(
+    null
+  );
+  const [historySearchTerm, setHistorySearchTerm] = useState(""); // Added historySearchTerm state
 
   // Toujours appeler useRemoteStorage, en passant token vide si non dispo
   const {
@@ -60,16 +77,24 @@ const Index = () => {
     // The history.forEach loop and its console.warn have been removed.
     // The main console.log for fetched history data is kept.
     if (history && Array.isArray(history) && history.length > 0) {
-      console.log("Fetched history data in Index.tsx:", JSON.stringify(history, null, 2));
+      console.log(
+        "Fetched history data in Index.tsx:",
+        JSON.stringify(history, null, 2)
+      );
     } else if (history) {
-      console.log("Fetched history data in Index.tsx (empty or not array):", history);
+      console.log(
+        "Fetched history data in Index.tsx (empty or not array):",
+        history
+      );
     }
   }, [history]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const handleResumePausedWorkout = () => {
@@ -105,7 +130,9 @@ const Index = () => {
     try {
       const authToken = getToken();
       if (!authToken) {
-        toast.error("Utilisateur non authentifié. Impossible de supprimer le modèle.");
+        toast.error(
+          "Utilisateur non authentifié. Impossible de supprimer le modèle."
+        );
         return;
       }
       const response = await fetch(`${BASE_URL}templates/${id}`, {
@@ -126,14 +153,33 @@ const Index = () => {
         return;
       }
 
-      const updatedTemplates = templates.filter((template) => template.id !== id);
+      const updatedTemplates = templates.filter(
+        (template) => template.id !== id
+      );
       setTemplatesLocally(updatedTemplates); // This now only updates local state
       toast.success("Modèle supprimé avec succès");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur inconnue";
       toast.error(`Erreur lors de la suppression du modèle: ${errorMessage}.`);
     }
   };
+
+  const filteredHistory = history.filter((workout) => {
+    const searchTerm = historySearchTerm.toLowerCase();
+    // Ensure workout_details and its name property exist and are strings
+    if (
+      workout.workout_details &&
+      typeof workout.workout_details.name === "string"
+    ) {
+      return workout.workout_details.name.toLowerCase().includes(searchTerm);
+    }
+    // Fallback to workout.name if workout_details.name is not available
+    if (typeof workout.name === "string") {
+      return workout.name.toLowerCase().includes(searchTerm);
+    }
+    return false; // If no suitable name, don't include it in filtered results
+  });
 
   const handleStartWorkout = (id: string) => {
     window.location.href = `/workout/${id}`;
@@ -147,18 +193,35 @@ const Index = () => {
         {pausedWorkout && (
           <Card className="mb-6 bg-yellow-50 border-yellow-300 dark:bg-yellow-900 dark:border-yellow-700">
             <CardHeader>
-              <CardTitle className="text-yellow-700 dark:text-yellow-300">Séance en Pause</CardTitle>
+              <CardTitle className="text-yellow-700 dark:text-yellow-300">
+                Séance en Pause
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p><strong>Nom:</strong> {pausedWorkout.name}</p>
+              <p>
+                <strong>Nom:</strong> {pausedWorkout.name}
+              </p>
               {pausedWorkout.pausedAt && (
-                <p><strong>En pause depuis:</strong> {new Date(pausedWorkout.pausedAt).toLocaleString()}</p>
+                <p>
+                  <strong>En pause depuis:</strong>{" "}
+                  {new Date(pausedWorkout.pausedAt).toLocaleString()}
+                </p>
               )}
-              <p><strong>Temps écoulé lors de la pause:</strong> {formatTime(pausedWorkout.elapsedTimeBeforePause || 0)}</p>
+              <p>
+                <strong>Temps écoulé lors de la pause:</strong>{" "}
+                {formatTime(pausedWorkout.elapsedTimeBeforePause || 0)}
+              </p>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleDiscardPausedWorkout}>Abandonner</Button>
-              <Button onClick={handleResumePausedWorkout} className="bg-yellow-500 hover:bg-yellow-600 text-white">Reprendre</Button>
+              <Button variant="outline" onClick={handleDiscardPausedWorkout}>
+                Abandonner
+              </Button>
+              <Button
+                onClick={handleResumePausedWorkout}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
+              >
+                Reprendre
+              </Button>
             </CardFooter>
           </Card>
         )}
@@ -215,17 +278,30 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="history" className="mt-4">
-            {history.length > 0 ? (
+            <Input
+              type="text"
+              placeholder="Rechercher dans l'historique..."
+              value={historySearchTerm}
+              onChange={(e) => setHistorySearchTerm(e.target.value)}
+              className="mb-4"
+            />
+            {filteredHistory.length > 0 ? (
               <div className="space-y-4">
-                {history.map((workout) => {
-                  // Removed console.log for rendering item and the if block with console.warn for history_db_id.
-                  return <WorkoutHistoryCard key={workout.history_db_id} workout={workout} />;
+                {filteredHistory.map((workout) => {
+                  return (
+                    <WorkoutHistoryCard
+                      key={workout.history_db_id}
+                      workout={workout}
+                    />
+                  );
                 })}
               </div>
             ) : (
               <div className="p-8 text-center bg-white rounded-lg shadow-sm dark:bg-zinc-900">
                 <p className="text-muted-foreground">
-                  Vous n'avez pas encore d'historique de séances
+                  {historySearchTerm
+                    ? "Aucun résultat pour votre recherche."
+                    : "Vous n'avez pas encore d'historique de séances"}
                 </p>
               </div>
             )}

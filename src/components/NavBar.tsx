@@ -18,9 +18,9 @@ const NavBar = () => {
   return (
     <nav className="sticky top-0 z-10 w-full bg-white border-b dark:bg-zinc-900 dark:border-zinc-800">
       <div className="container flex items-center justify-between h-16 px-4 mx-auto">
-        <Link to="/" className="text-xl font-semibold text-workout-primary">
+        <div className="text-xl font-semibold text-workout-primary">
           FitTrack
-        </Link>
+        </div>
 
         <div className="flex items-center space-x-4">
 
