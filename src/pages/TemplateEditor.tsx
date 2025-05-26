@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -331,26 +325,6 @@ const TemplateEditor = () => {
     );
   }
 
-  const handleOnDragEnd = (result: DropResult) => {
-    if (!result.destination) return; // Dropped outside the list
-
-    const items = Array.from(workout.exercises);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    // Update order_num for all items
-    const updatedItems = items.map((item, index) => ({
-      ...item,
-      order_num: index,
-    }));
-
-    setWorkout((prevWorkout) => ({
-      ...prevWorkout,
-      exercises: updatedItems,
-      updatedAt: new Date(),
-    }));
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
       <NavBar />
@@ -404,41 +378,17 @@ const TemplateEditor = () => {
 
             <div>
               <h2 className="mb-4 text-xl font-semibold">Exercices</h2>
-              <DragDropContext onDragEnd={handleOnDragEnd}>
-                <Droppable droppableId="exercises">
-                  {(provided) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="space-y-4"
-                    >
-                      {workout.exercises.map((exercise, index) => (
-                        <Draggable
-                          key={exercise.id}
-                          draggableId={exercise.id}
-                          index={index}
-                        >
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              // Add some margin here if needed for visual separation during drag
-                            >
-                              <ExerciseForm
-                                exercise={exercise}
-                                onUpdate={handleExerciseUpdate}
-                                onDelete={handleExerciseDelete}
-                                dragHandleProps={provided.dragHandleProps}
-                              />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
+              <div className="space-y-4">
+                {workout.exercises.map((exercise, index) => (
+                  <div key={exercise.id}>
+                    <ExerciseForm
+                      exercise={exercise}
+                      onUpdate={handleExerciseUpdate}
+                      onDelete={handleExerciseDelete}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="flex flex-col gap-3 mt-6 sm:flex-row">
               <Button
