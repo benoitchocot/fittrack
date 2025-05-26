@@ -11,6 +11,7 @@ export interface Exercise {
   name: string;
   sets: Set[];
   comment?: string;
+  order_num: number;
 }
 
 export interface WorkoutTemplate {

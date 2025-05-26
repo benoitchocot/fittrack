@@ -3,10 +3,11 @@ import { Exercise, Set, WorkoutTemplate, ActiveWorkout, WorkoutHistory } from '@
 
 // Utility functions to generate IDs
 const generateId = () => Date.now().toString();
-const generateExercise = (name = ""): Exercise => ({
+const generateExercise = (name = "", order_num = 0): Exercise => ({
   id: generateId(),
   name: name,
   sets: [{ id: generateId(), weight: 0, reps: 0, completed: false }],
+  order_num: order_num, // Assign order_num
 });
 
 // Service functions
@@ -14,7 +15,7 @@ export const createWorkoutTemplate = (name: string): WorkoutTemplate => {
   return {
     id: generateId(),
     name,
-    exercises: [generateExercise()],
+    exercises: [generateExercise("", 0)], // Pass initial order_num
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -80,12 +81,13 @@ export const updateExercise = (
 };
 
 export const addExercise = (
-  workout: WorkoutTemplate | ActiveWorkout,
-  exerciseName = ""
+  workout: WorkoutTemplate | ActiveWorkout
+  // No need for exerciseName here if we follow the manual creation in TemplateEditor or always add a blank one
 ): WorkoutTemplate | ActiveWorkout => {
+  const newOrderNum = workout.exercises.length;
   return {
     ...workout,
-    exercises: [...workout.exercises, generateExercise(exerciseName)],
+    exercises: [...workout.exercises, generateExercise("", newOrderNum)], // generateExercise now handles order_num
     updatedAt: new Date(),
   };
 };
