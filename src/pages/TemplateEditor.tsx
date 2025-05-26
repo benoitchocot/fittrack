@@ -422,13 +422,13 @@ const TemplateEditor = () => {
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              {...provided.dragHandleProps}
                               // Add some margin here if needed for visual separation during drag
                             >
                               <ExerciseForm
                                 exercise={exercise}
                                 onUpdate={handleExerciseUpdate}
                                 onDelete={handleExerciseDelete}
+                                dragHandleProps={provided.dragHandleProps}
                               />
                             </div>
                           )}
