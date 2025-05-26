@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Exercise, Set } from "@/types/workout";
-import { Trash, Plus, Minus } from "lucide-react";
+import { Trash, Plus, Minus, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ExerciseFormProps {
@@ -13,6 +13,7 @@ interface ExerciseFormProps {
   onUpdate: (exercise: Exercise) => void;
   onDelete: (id: string) => void;
   isActive?: boolean;
+  dragHandleProps?: any;
 }
 
 const ExerciseForm = ({
@@ -20,6 +21,7 @@ const ExerciseForm = ({
   onUpdate,
   onDelete,
   isActive = false,
+  dragHandleProps,
 }: ExerciseFormProps) => {
   const [showComment, setShowComment] = useState(!!exercise.comment);
 
@@ -56,7 +58,10 @@ const ExerciseForm = ({
     <Card className="mb-6">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <div className="flex-1 mr-2">
+          <div {...dragHandleProps} className="drag-handle cursor-grab p-2">
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className="flex-1 mx-2">
             <Input
               placeholder="Nom de l'exercice"
               value={exercise.name}
