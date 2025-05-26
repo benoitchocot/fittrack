@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Exercise, Set } from "@/types/workout";
-import { Trash, Plus, Minus } from "lucide-react";
+import { Trash, Plus, Minus, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ExerciseFormProps {
@@ -13,6 +13,10 @@ interface ExerciseFormProps {
   onUpdate: (exercise: Exercise) => void;
   onDelete: (id: string) => void;
   isActive?: boolean;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
+  exerciseIndex: number;
+  totalExercises: number;
 }
 
 const ExerciseForm = ({
@@ -20,6 +24,10 @@ const ExerciseForm = ({
   onUpdate,
   onDelete,
   isActive = false,
+  onMoveUp,
+  onMoveDown,
+  exerciseIndex,
+  totalExercises,
 }: ExerciseFormProps) => {
   const [showComment, setShowComment] = useState(!!exercise.comment);
 
@@ -64,13 +72,34 @@ const ExerciseForm = ({
               className="font-medium"
             />
           </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onDelete(exercise.id)}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center ml-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onMoveUp(exercise.id)}
+              disabled={exerciseIndex === 0}
+              className="p-1"
+            >
+              <ChevronUp className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onMoveDown(exercise.id)}
+              disabled={exerciseIndex === totalExercises - 1}
+              className="p-1"
+            >
+              <ChevronDown className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(exercise.id)}
+              className="ml-2 p-1"
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
