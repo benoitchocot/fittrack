@@ -159,6 +159,43 @@ const TemplateEditor = () => {
     setWorkout(removeExercise(workout, exerciseId));
   };
 
+  const handleMoveExercise = (exerciseId: string, direction: "up" | "down") => {
+    const currentExercises = workout.exercises;
+    const currentIndex = currentExercises.findIndex(ex => ex.id === exerciseId);
+
+    if (currentIndex === -1) {
+      console.error(`Exercise with id ${exerciseId} not found.`);
+      return;
+    }
+
+    let newIndex;
+    if (direction === "up") {
+      newIndex = currentIndex - 1;
+    } else {
+      newIndex = currentIndex + 1;
+    }
+
+    if (newIndex < 0 || newIndex >= currentExercises.length) {
+      // Invalid move (e.g., moving the first item up or the last item down)
+      return;
+    }
+
+    const newExercises = [...currentExercises];
+    const [movedExercise] = newExercises.splice(currentIndex, 1);
+    newExercises.splice(newIndex, 0, movedExercise);
+
+    const updatedExercisesWithOrder = newExercises.map((ex, index) => ({
+      ...ex,
+      order_num: index,
+    }));
+
+    setWorkout(prevWorkout => ({
+      ...prevWorkout,
+      exercises: updatedExercisesWithOrder,
+      updatedAt: new Date(),
+    }));
+  };
+
   const handleSave = async () => {
     if (!workout.name.trim()) {
       toast.error("Veuillez donner un nom à votre séance");
@@ -385,6 +422,10 @@ const TemplateEditor = () => {
                       exercise={exercise}
                       onUpdate={handleExerciseUpdate}
                       onDelete={handleExerciseDelete}
+                      onMoveUp={() => handleMoveExercise(exercise.id, 'up')}
+                      onMoveDown={() => handleMoveExercise(exercise.id, 'down')}
+                      exerciseIndex={index}
+                      totalExercises={workout.exercises.length}
                     />
                   </div>
                 ))}
