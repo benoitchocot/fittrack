@@ -12,6 +12,7 @@ import ActiveWorkout from "./pages/ActiveWorkout";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import NotFound from "./pages/NotFound";
+import WorkoutHistoryDetail from "./pages/WorkoutHistoryDetail";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
                     element={<TemplateEditor />}
                   />
                   <Route path="/workout/:id" element={<ActiveWorkout />} />
+                  <Route path="/history/:historyId" element={<WorkoutHistoryDetail />} />
                   <Route path="/auth/login" element={<Login />} />
                   <Route path="/auth/register" element={<Register />} />
                   <Route path="*" element={<NotFound />} />
