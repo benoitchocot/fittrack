@@ -266,7 +266,7 @@ const TemplateEditor = () => {
 
       if (isEditMode && payloadWorkout.id) {
         // Ensure payloadWorkout.id is present for PUT
-        const response = await fetch(`${BASE_URL}${payloadWorkout.id}`, {
+        const response = await fetch(`${BASE_URL}templates/${payloadWorkout.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
