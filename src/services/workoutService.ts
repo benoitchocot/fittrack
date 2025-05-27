@@ -6,7 +6,7 @@ const generateId = () => Date.now().toString();
 const generateExercise = (name = "", order_num = 0): Exercise => ({
   id: generateId(),
   name: name,
-  sets: [{ id: generateId(), weight: 0, reps: 0, completed: false }],
+  sets: [{ id: generateId(), weight: null, reps: null, completed: false }],
   order_num: order_num, // Assign order_num
 });
 
@@ -31,8 +31,8 @@ export const startWorkout = (template: any): ActiveWorkout => { // Use 'any' for
     comment: ex.notes || ex.comment,        // Map notes to comment, fallback to comment
     sets: (ex.sets || []).map((s: any) => ({
       id: s.id || generateId(), // Preserve backend ID for sets
-      weight: s.kg === undefined ? (s.weight === undefined ? 0 : s.weight) : s.kg, // Map kg to weight, fallback to weight, then 0
-      reps: s.reps === undefined ? 0 : s.reps, // Default reps if undefined
+      weight: s.kg ?? s.weight ?? null, // Map kg to weight, fallback to weight, then null
+      reps: s.reps ?? null, // Default reps to null if undefined
       completed: s.completed === undefined ? false : !!s.completed, // Default completed if undefined
     })),
   }));

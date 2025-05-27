@@ -215,9 +215,12 @@ const TemplateEditor = () => {
         return;
       }
       for (const set of exercise.sets) {
-        if (typeof set.weight !== "number" || typeof set.reps !== "number") {
+        if (
+          (set.weight !== null && (typeof set.weight !== "number" || isNaN(set.weight))) ||
+          (set.reps !== null && (typeof set.reps !== "number" || isNaN(set.reps)))
+        ) {
           toast.error(
-            `Les séries pour '${exercise.name}' doivent avoir des poids et répétitions valides.`
+            `Les séries pour '${exercise.name}' doivent avoir des poids et répétitions valides (numériques ou vides). Les valeurs entrées doivent être des nombres.`
           );
           return;
         }

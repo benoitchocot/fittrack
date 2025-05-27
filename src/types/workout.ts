@@ -1,8 +1,8 @@
 
 export interface Set {
   id: string;
-  weight: number;
-  reps: number;
+  weight: number | null;
+  reps: number | null;
   completed: boolean;
 }
 

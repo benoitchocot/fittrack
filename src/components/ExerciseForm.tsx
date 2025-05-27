@@ -42,14 +42,14 @@ const ExerciseForm = ({
   const addSet = () => {
     const newSet: Set = {
       id: Date.now().toString(),
-      weight: 0,
-      reps: 0,
+      weight: null,
+      reps: null,
       completed: false,
     };
     onUpdate({ ...exercise, sets: [...exercise.sets, newSet] });
   };
 
-  const updateSet = (index: number, field: keyof Set, value: number | boolean) => {
+  const updateSet = (index: number, field: keyof Set, value: number | boolean | null) => {
     const newSets = [...exercise.sets];
     newSets[index] = { ...newSets[index], [field]: value };
     onUpdate({ ...exercise, sets: newSets });
@@ -122,10 +122,9 @@ const ExerciseForm = ({
               <div className="col-span-4 md:col-span-3">
                 <Input
                   type="number"
-                  min="0"
-                  value={set.weight}
+                  value={set.weight === 0 ? null : set.weight ?? ''}
                   onChange={(e) =>
-                    updateSet(index, "weight", Number(e.target.value))
+                    updateSet(index, "weight", e.target.value === '' ? null : parseFloat(e.target.value))
                   }
                   className="h-9"
                 />
@@ -134,9 +133,9 @@ const ExerciseForm = ({
                 <Input
                   type="number"
                   min="0"
-                  value={set.reps}
+                  value={set.reps === 0 ? null : set.reps ?? ''}
                   onChange={(e) =>
-                    updateSet(index, "reps", Number(e.target.value))
+                    updateSet(index, "reps", e.target.value === '' ? null : parseInt(e.target.value, 10))
                   }
                   className="h-9"
                 />

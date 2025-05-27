@@ -88,8 +88,8 @@ db.run(`
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       template_named_exercise_id INTEGER,
       set_order INTEGER,
-      kg INTEGER,
-      reps INTEGER,
+      kg INTEGER NULL,
+      reps INTEGER NULL,
       completed BOOLEAN DEFAULT 0 
     )
   `);
