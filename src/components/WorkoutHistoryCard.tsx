@@ -47,9 +47,11 @@ const WorkoutHistoryCard = ({ workout }: WorkoutHistoryCardProps) => {
 
   // Format date as "Day Month" (e.g., "15 Mai")
   const formattedDate = new Date(finishedAt).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'short'
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
   });
+
 
   return (
     <Card className="workout-card mb-4">
