@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { getToken } from "@/utils/auth";
 import { useAuth } from "@/context/AuthContext";
 import BASE_URL from "@/config";
+import { apiFetch } from "../utils/api";
 
 const Index = () => {
   const { token, loading: authLoading } = useAuth();
@@ -128,40 +129,46 @@ const Index = () => {
 
   const handleDeleteTemplate = async (id: string) => {
     try {
-      const authToken = getToken();
-      if (!authToken) {
-        toast.error(
-          "Utilisateur non authentifié. Impossible de supprimer le modèle."
-        );
-        return;
-      }
-      const response = await fetch(`${BASE_URL}templates/${id}`, {
+      // apiFetch will handle Authorization header and token.
+      // It will also throw an error for 401, which will be caught below.
+      const response = await apiFetch(`${BASE_URL}templates/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
       });
 
+      // apiFetch throws for 401, so if we reach here, it's not a 401.
+      // We still need to check for other non-ok statuses (e.g., 500, 400).
       if (!response.ok) {
         let errorData = { error: `Erreur HTTP ${response.status}` };
         try {
-          errorData = await response.json();
+          // Attempt to parse JSON error response from server
+          errorData = await response.json(); 
         } catch {
+          // Fallback if response is not JSON or errorData.error is not set
           errorData.error = response.statusText || errorData.error;
         }
         toast.error(`Erreur serveur: ${errorData.error}`);
         return;
       }
 
+      // If DELETE is successful, backend usually returns 204 No Content or 200 OK with a success message.
+      // No need to parse response.json() unless the server sends back useful data for DELETE.
+      // For example, if it sent back the ID of the deleted item: const deletedData = await response.json();
+
       const updatedTemplates = templates.filter(
         (template) => template.id !== id
       );
-      setTemplatesLocally(updatedTemplates); // This now only updates local state
+      setTemplatesLocally(updatedTemplates); 
       toast.success("Modèle supprimé avec succès");
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Erreur inconnue";
-      toast.error(`Erreur lors de la suppression du modèle: ${errorMessage}.`);
+      const specificError = error as Error;
+      if (specificError.message === 'Session expired. Redirecting to login.') {
+        // apiFetch has handled the redirect and thrown an error.
+        // No further action needed here.
+      } else {
+        const errorMessage = specificError.message || "Erreur inconnue";
+        toast.error(`Erreur lors de la suppression du modèle: ${errorMessage}.`);
+        console.error("Error deleting template:", specificError); // Also log the error
+      }
     }
   };
 
