@@ -18,6 +18,8 @@ import {
 } from "@/services/workoutService";
 import { toast } from "sonner";
 import BASE_URL from "../config";
+import { apiFetch } from "../utils/api";
+
 const TemplateEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -64,13 +66,16 @@ const TemplateEditor = () => {
 
       // If authenticated, proceed to fetch the template data
       setIsLoadingTemplate(true);
-      fetch(`${BASE_URL}templates/${id}`, {
-        headers: {
-          Authorization: `Bearer ${authTokenFromContext}`,
-        },
+      apiFetch(`${BASE_URL}templates/${id}`, {
+        // Authorization is handled by apiFetch.
+        // If other specific headers were needed, they would go here.
       })
         .then(async (response) => {
+          // apiFetch throws an error for 401, so the promise chain will be broken,
+          // and it will go directly to the .catch block.
+          // Thus, no explicit 401 check is needed here.
           if (!response.ok) {
+            // This handles non-401 fetch errors that didn't throw in apiFetch (e.g. 500, 404)
             const errorData = await response
               .json()
               .catch(() => ({ error: "Erreur serveur inconnue" }));
@@ -110,9 +115,15 @@ const TemplateEditor = () => {
           setWorkout(transformedTemplate);
         })
         .catch((error) => {
-          console.error("Failed to load template:", error);
-          toast.error(error.message || "Échec du chargement du modèle.");
-          navigate("/");
+          if (error.message === 'Session expired. Redirecting to login.') {
+            // apiFetch has handled the redirect and thrown an error.
+            // No further action needed here for this specific error.
+            // The error will stop further processing in this chain.
+          } else {
+            console.error("Failed to load template:", error);
+            toast.error(error.message || "Échec du chargement du modèle.");
+            navigate("/");
+          }
         })
         .finally(() => {
           setIsLoadingTemplate(false);
@@ -269,15 +280,17 @@ const TemplateEditor = () => {
 
       if (isEditMode && payloadWorkout.id) {
         // Ensure payloadWorkout.id is present for PUT
-        const response = await fetch(`${BASE_URL}templates/${payloadWorkout.id}`, {
+        const response = await apiFetch(`${BASE_URL}templates/${payloadWorkout.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authTokenFromContext}`, // Utiliser le token du contexte
+            // Authorization is handled by apiFetch
           },
           body: JSON.stringify(payloadWorkout),
         });
 
+        // apiFetch throws for 401, which will be caught by the catch block.
+        // For other errors, we check response.ok.
         if (!response.ok) {
           const errorData = await response
             .json()
@@ -286,10 +299,11 @@ const TemplateEditor = () => {
             errorData.error || `Erreur serveur: ${response.statusText}`
           );
         }
-
-        // const updatedTemplateFromServer = await response.json(); // Backend sends { success: true, id: templateId }
-
-        // Rely on navigation and re-fetch on the target page
+        
+        // Assuming a successful PUT doesn't necessarily return the full template,
+        // or that we don't need to process it here beyond success.
+        // const updatedTemplateFromServer = await response.json(); 
+        
         toast.success("Modèle mis à jour avec succès !");
         navigate("/");
       } else if (!isEditMode) {
@@ -298,16 +312,16 @@ const TemplateEditor = () => {
           "Creating new template with payload:",
           JSON.stringify(payloadWorkout, null, 2)
         );
-        const response = await fetch(`${BASE_URL}templates`, {
+        const response = await apiFetch(`${BASE_URL}templates`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authTokenFromContext}`, // Utiliser le token du contexte
+            // Authorization is handled by apiFetch
           },
           body: JSON.stringify(payloadWorkout),
         });
 
-        if (!response.ok) {
+        if (!response.ok) { // Check for non-401 errors
           const errorData = await response
             .json()
             .catch(() => ({ error: "Erreur inconnue du serveur" }));
@@ -316,20 +330,26 @@ const TemplateEditor = () => {
           );
         }
 
-        // const newTemplateFromServer = await response.json(); // { success: true, id: ... }
+        // const newTemplateFromServer = await response.json();
         toast.success("Modèle créé avec succès !");
         navigate("/");
       } else {
-        // This case should ideally not be reached if logic is correct (isEditMode true means id should be loaded)
         toast.error(
           "ID de modèle manquant pour la mise à jour. Impossible de sauvegarder."
         );
         throw new Error("ID de modèle manquant pour la mise à jour.");
       }
     } catch (err) {
-      console.error("Failed to save template:", err);
-      const message = err instanceof Error ? err.message : "Erreur inconnue";
-      toast.error(`Échec de l'enregistrement: ${message}`);
+      const specificError = err as Error; // Type assertion
+      if (specificError.message === 'Session expired. Redirecting to login.') {
+        // apiFetch has handled the redirect and thrown an error.
+        // No further action needed here for this specific error.
+        // The error will propagate or stop execution if not caught further up.
+      } else {
+        console.error("Failed to save template:", specificError);
+        const message = specificError.message || "Erreur inconnue";
+        toast.error(`Échec de l'enregistrement: ${message}`);
+      }
     } finally {
       setIsSaving(false);
     }
