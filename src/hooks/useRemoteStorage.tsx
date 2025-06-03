@@ -1,6 +1,6 @@
-// hooks/useRemoteStorage.tsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../utils/api';
 
 type UseRemoteStorageOptions<T> = {
   initialValue: T;
@@ -19,30 +19,31 @@ function useRemoteStorage<T>({ initialValue, endpoint }: UseRemoteStorageOptions
       setLoading(true); // Ensure loading is true when fetchData is called
       setError(null); // Clear previous errors
       try {
-        console.log('[useRemoteStorage] Attempting fetch. Auth Token:', authToken);
-        const fetchHeaders = {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-        };
-        console.log('[useRemoteStorage] Fetch headers:', JSON.stringify(fetchHeaders));
+        // authToken is checked before calling fetchData.
+        // apiFetch will handle token inclusion.
+        console.log('[useRemoteStorage] Attempting fetch via apiFetch. Endpoint:', endpoint);
+        
+        const res = await apiFetch(endpoint); // apiFetch handles Authorization header
 
-        const res = await fetch(endpoint, {
-          headers: fetchHeaders,
-        });
-
+        // apiFetch throws for 401, which will be caught by the catch block.
+        // For other errors, we check response.ok.
         if (!res.ok) {
-          const errorText = await res.text();
+          const errorText = await res.text(); // Try to get more info from body
           throw new Error(`Erreur de récupération: ${res.status} ${errorText}`);
         }
 
         const json = await res.json();
-        // The conditional transformation for '/history' has been removed.
-        // setData(json) will now apply to all endpoints, including /history.
-        // This assumes the backend for /history now returns data in the correct WorkoutHistory[] format.
         setData(json);
       } catch (err) {
-        console.error(err);
-        setError(err instanceof Error ? err.message : 'Impossible de charger les données');
+        const specificError = err as Error;
+        if (specificError.message === 'Session expired. Redirecting to login.') {
+          // apiFetch has handled the redirect and thrown an error.
+          // No further action needed here for this specific error.
+          // setLoading(false) will be called in finally.
+        } else {
+          console.error(err);
+          setError(specificError.message || 'Impossible de charger les données');
+        }
       } finally {
         setLoading(false);
       }
@@ -68,34 +69,40 @@ function useRemoteStorage<T>({ initialValue, endpoint }: UseRemoteStorageOptions
 
     setError(null); // Clear previous errors before POSTing
     try {
-      console.log('[useRemoteStorage] Attempting POST. Auth Token:', authToken);
-      const postHeaders = {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json',
-      };
-      console.log('[useRemoteStorage] POST headers:', JSON.stringify(postHeaders));
+      // authToken is checked before calling postDataToServer.
+      // apiFetch will handle token inclusion and Content-Type for JSON string.
+      console.log('[useRemoteStorage] Attempting POST via apiFetch. Endpoint:', endpoint);
 
-      const res = await fetch(endpoint, { // Assumes endpoint is the collection endpoint for POST
+      const res = await apiFetch(endpoint, { 
         method: 'POST',
-        headers: postHeaders,
+        // apiFetch sets Content-Type: application/json if body is an object.
+        // Since itemToPost is stringified, this should be fine.
+        // If specific Content-Type is needed for stringified body, add it here.
         body: JSON.stringify(itemToPost),
       });
 
+      // apiFetch throws for 401, which will be caught by the catch block.
+      // For other errors, we check response.ok.
       if (!res.ok) {
         const errorText = await res.text();
         const saveError = new Error(`Erreur de sauvegarde (POST): ${res.status} ${errorText}`);
-        setError(saveError.message);
-        throw saveError;
+        // setError(saveError.message); // Error will be set in the catch block
+        throw saveError; // Throw to be caught by the generic catch block
       }
       return await res.json(); // Return the created item (or response from server)
     } catch (err) {
-      console.error(err);
-      // If setError was already called with a more specific error from response, don't overwrite.
-      // Otherwise, set a generic error.
-      if (!error) { // Check if error state is already set by a more specific message
-         setError(err instanceof Error ? err.message : 'Erreur de sauvegarde (POST)');
+      const specificError = err as Error;
+      if (specificError.message === 'Session expired. Redirecting to login.') {
+        // apiFetch has handled the redirect.
+        // We still need to reject the promise so the caller knows the POST failed.
+        return Promise.reject(specificError);
+      } else {
+        console.error(err);
+        // Set error state if not already set by a more specific message from response processing
+        // The primary error setting now happens here.
+        setError(specificError.message || 'Erreur de sauvegarde (POST)');
+        return Promise.reject(specificError); // Propagate the error
       }
-      return Promise.reject(err); // Propagate the error
     }
   };
 
