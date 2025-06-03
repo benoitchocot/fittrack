@@ -23,6 +23,7 @@ import {
 } from "@/services/workoutService";
 import { toast } from "sonner";
 import BASE_URL from "@/config"; // Assuming BASE_URL is defined in config
+import { apiFetch } from "../utils/api";
 
 const ActiveWorkout = () => {
   const { id } = useParams();
@@ -196,27 +197,20 @@ const ActiveWorkout = () => {
         // However, the instruction is to modify useRemoteStorage usage. This part of the code
         // is not using useRemoteStorage for the POST, so it's outside the current scope of changes
         // for useRemoteStorage. But if it were to be refactored to use saveData, token would be handled.
-        // For now, let's assume this direct fetch needs to be updated separately or is handled
-        // by another mechanism if `token` variable was removed.
-        // For the purpose of this subtask, I will remove the direct usage of `token` here as well,
-        // assuming it will be handled by a global fetch interceptor or similar, or needs to be
-        // refactored to use `getToken()` from `src/utils/auth.ts`.
-        // To be safe and ensure this POST continues to work, I will add getToken() here.
-        const authToken = getToken(); 
-        if (!authToken) {
-          toast.error("Utilisateur non authentifié. Impossible de sauvegarder l'historique.");
-          return; 
-        }
-        const response = await fetch(`${BASE_URL}history`, {
+      // apiFetch will handle Authorization header and token.
+      // It will also throw an error for 401, which will be caught below.
+      const response = await apiFetch(`${BASE_URL}history`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
-          },
-          // Send the entire completedWorkout object
-          body: JSON.stringify(completedWorkout), 
+        // apiFetch will set Content-Type: application/json if body is an object.
+        // Here, body is already a JSON string, which is also fine.
+        // If apiFetch requires an object for auto Content-Type, ensure completedWorkout is passed directly.
+        // For now, assume sending JSON string is okay and apiFetch's default headers are suitable or it adapts.
+        // The current apiFetch sets Content-Type: application/json by default.
+        body: JSON.stringify(completedWorkout),
         });
 
+      // apiFetch throws for 401, so if we reach here, it's not a 401.
+      // We still need to check for other non-ok statuses (e.g., 500, 400).
         if (!response.ok) {
           let errorMsg = response.statusText;
           try {
