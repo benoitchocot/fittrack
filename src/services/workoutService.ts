@@ -53,14 +53,11 @@ export const startWorkout = (template: any): ActiveWorkout => { // Use 'any' for
   };
 };
 
-export const finishWorkout = (workout: ActiveWorkout): WorkoutHistory => {
+export const finishWorkout = (workout: ActiveWorkout): ActiveWorkout => {
   return {
-    id: generateId(),
-    workoutId: workout.id,
-    name: workout.name,
-    exercises: workout.exercises,
-    startedAt: workout.startedAt,
+    ...workout,
     finishedAt: new Date(),
+    isActive: false,
   };
 };
 
