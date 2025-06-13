@@ -17,6 +17,7 @@ interface ExerciseFormProps {
   onMoveDown: (id: string) => void;
   exerciseIndex: number;
   totalExercises: number;
+  lastPerformanceData?: { weight: number | null; reps: number | null } | null;
 }
 
 const ExerciseForm = ({
@@ -28,6 +29,7 @@ const ExerciseForm = ({
   onMoveDown,
   exerciseIndex,
   totalExercises,
+  lastPerformanceData,
 }: ExerciseFormProps) => {
   const [showComment, setShowComment] = useState(!!exercise.comment);
 
@@ -128,6 +130,12 @@ const ExerciseForm = ({
                   }
                   className="h-9"
                 />
+                {/* Display historical data for the first set's weight input */}
+                {index === 0 && lastPerformanceData && lastPerformanceData.weight !== null && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Dernier: {lastPerformanceData.weight}kg
+                  </p>
+                )}
               </div>
               <div className="col-span-4 md:col-span-3">
                 <Input
@@ -139,6 +147,12 @@ const ExerciseForm = ({
                   }
                   className="h-9"
                 />
+                {/* Display historical data for the first set's reps input */}
+                {index === 0 && lastPerformanceData && lastPerformanceData.reps !== null && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Dernier: {lastPerformanceData.reps} reps
+                  </p>
+                )}
               </div>
               {isActive && (
                 <div className="col-span-2 md:col-span-4 flex justify-center">
