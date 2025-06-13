@@ -77,6 +77,35 @@ export const updateExercise = (
   };
 };
 
+export const getLastPerformedSetData = (
+  exerciseName: string,
+  history: WorkoutHistory[]
+): { weight: number | null; reps: number | null } | null => {
+  if (!history || history.length === 0) {
+    return null;
+  }
+
+  for (const historyEntry of history) {
+    // Ensure workout_details and its exercises array exist
+    if (historyEntry.workout_details && historyEntry.workout_details.exercises) {
+      const matchingExercise = historyEntry.workout_details.exercises.find(
+        (ex) => ex.name.toLowerCase() === exerciseName.toLowerCase()
+      );
+
+      // Ensure the exercise was found and has sets
+      if (matchingExercise && matchingExercise.sets && matchingExercise.sets.length > 0) {
+        // Return data from its first set (assuming the first set is representative or the most relevant)
+        return {
+          weight: matchingExercise.sets[0].weight,
+          reps: matchingExercise.sets[0].reps,
+        };
+      }
+    }
+  }
+
+  return null; // No performance found in history or no sets in the matched exercise
+};
+
 export const addExercise = (
   workout: WorkoutTemplate | ActiveWorkout
   // No need for exerciseName here if we follow the manual creation in TemplateEditor or always add a blank one
