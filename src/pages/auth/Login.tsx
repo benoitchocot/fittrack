@@ -10,18 +10,42 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Import useEffect
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 // import { setToken } from "@/utils/auth"; // Supprimé
 import { useAuth } from "@/context/AuthContext"; // Import useAuth
 import BASE_URL from "@/config"; // Assurez-vous que le chemin est correct
+import { apiFetch } from "@/utils/api"; // Import apiFetch
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [userCount, setUserCount] = useState<number | null>(null);
+  const [loadingCount, setLoadingCount] = useState<boolean>(true);
   const { login } = useAuth(); // Obtenir login du contexte
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUserCount = async () => {
+      setLoadingCount(true);
+      try {
+        const response = await apiFetch('auth/count'); // Corrected call
+        const data = await response.json();
+        if (typeof data.count === 'number') {
+          setUserCount(data.count);
+        } else {
+          console.error('User count received was not a number:', data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user count:', error);
+      } finally {
+        setLoadingCount(false);
+      }
+    };
+
+    fetchUserCount();
+  }, []); // Empty dependency array to run once on mount
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +142,11 @@ const Login = () => {
             </div>
           </CardFooter>
         </Card>
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          {!loadingCount && userCount !== null && (
+            <p>Déjà {userCount} inscrits</p>
+          )}
+        </div>
       </div>
     </div>
   );
