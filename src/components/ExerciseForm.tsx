@@ -17,7 +17,7 @@ interface ExerciseFormProps {
   onMoveDown: (id: string) => void;
   exerciseIndex: number;
   totalExercises: number;
-  lastPerformanceData?: { weight: number | null; reps: number | null } | null;
+  lastPerformanceData?: Array<{ weight: number | null; reps: number | null } | null> | null;
 }
 
 const ExerciseForm = ({
@@ -130,10 +130,10 @@ const ExerciseForm = ({
                   }
                   className="h-9"
                 />
-                {/* Display historical data for the first set's weight input */}
-                {index === 0 && lastPerformanceData && lastPerformanceData.weight !== null && (
+                {/* Display historical data for THIS set's weight input, if available and completed */}
+                {lastPerformanceData && lastPerformanceData[index] && lastPerformanceData[index]?.weight !== null && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Dernier: {lastPerformanceData.weight}kg
+                    Dernier: {lastPerformanceData[index]?.weight}kg
                   </p>
                 )}
               </div>
@@ -147,10 +147,10 @@ const ExerciseForm = ({
                   }
                   className="h-9"
                 />
-                {/* Display historical data for the first set's reps input */}
-                {index === 0 && lastPerformanceData && lastPerformanceData.reps !== null && (
+                {/* Display historical data for THIS set's reps input, if available and completed */}
+                {lastPerformanceData && lastPerformanceData[index] && lastPerformanceData[index]?.reps !== null && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Dernier: {lastPerformanceData.reps} reps
+                    Dernier: {lastPerformanceData[index]?.reps} reps
                   </p>
                 )}
               </div>
