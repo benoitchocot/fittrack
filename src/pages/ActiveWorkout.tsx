@@ -13,9 +13,9 @@ import NavBar from "@/components/NavBar";
 import ExerciseForm from "@/components/ExerciseForm";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
 import { getToken } from "@/utils/auth";
-import { WorkoutTemplate, ActiveWorkout as ActiveWorkoutType, Exercise, WorkoutHistory } from "@/types/workout";
+import { WorkoutTemplate, ActiveWorkout as ActiveWorkoutType, Exercise, Set as ExerciseSet, WorkoutHistory } from "@/types/workout"; // Ensure Set is imported, aliasing if necessary e.g. as ExerciseSet
 import { getPausedWorkout, savePausedWorkout, clearPausedWorkout } from "@/utils/pausedWorkoutStorage"; // Corrected path
-import { ArrowLeft, CheckCircle2, Play, Pause } from "lucide-react"; // Added Play and Pause icons
+import { ArrowLeft, CheckCircle2, Play, Pause, PlusCircle } from "lucide-react"; // Added Play and Pause icons
 import {
   startWorkout,
   updateExercise,
@@ -134,6 +134,64 @@ const ActiveWorkout = () => {
     }
   };
 
+  const handleAddExercise = () => {
+    if (activeWorkout) {
+      const newSet: ExerciseSet = { 
+        id: Date.now().toString() + "-set", 
+        weight: null,
+        reps: null,
+        completed: false,
+      };
+      const newExercise: Exercise = { 
+        id: Date.now().toString(),
+        name: "Nouvel Exercice", 
+        sets: [newSet], 
+        comment: "", 
+      };
+      const updatedExercises = [...activeWorkout.exercises, newExercise];
+      const updatedWorkout = { ...activeWorkout, exercises: updatedExercises };
+      setActiveWorkout(updatedWorkout);
+      if (updatedWorkout.isPaused) {
+        savePausedWorkout(updatedWorkout);
+      }
+      toast.success("Nouvel exercice ajouté !"); 
+    }
+  };
+
+  const handleMoveExerciseUp = (exerciseId: string) => {
+    if (activeWorkout) {
+      const index = activeWorkout.exercises.findIndex(ex => ex.id === exerciseId);
+      if (index > 0) {
+        const newExercises = [...activeWorkout.exercises];
+        const temp = newExercises[index];
+        newExercises[index] = newExercises[index - 1];
+        newExercises[index - 1] = temp;
+        const updatedWorkout = { ...activeWorkout, exercises: newExercises };
+        setActiveWorkout(updatedWorkout);
+        if (updatedWorkout.isPaused) {
+          savePausedWorkout(updatedWorkout);
+        }
+      }
+    }
+  };
+
+  const handleMoveExerciseDown = (exerciseId: string) => {
+    if (activeWorkout) {
+      const index = activeWorkout.exercises.findIndex(ex => ex.id === exerciseId);
+      if (index < activeWorkout.exercises.length - 1 && index !== -1) {
+        const newExercises = [...activeWorkout.exercises];
+        const temp = newExercises[index];
+        newExercises[index] = newExercises[index + 1];
+        newExercises[index + 1] = temp;
+        const updatedWorkout = { ...activeWorkout, exercises: newExercises };
+        setActiveWorkout(updatedWorkout);
+        if (updatedWorkout.isPaused) {
+          savePausedWorkout(updatedWorkout);
+        }
+      }
+    }
+  };
+
   const handleResumeWorkout = () => {
     if (activeWorkout && activeWorkout.isPaused) {
       // Adjust startedAt to make the timer continue correctly from elapsedTimeBeforePause
@@ -153,7 +211,23 @@ const ActiveWorkout = () => {
 
   const handleExerciseUpdate = (updatedExercise: Exercise) => {
     if (activeWorkout) {
-      setActiveWorkout(updateExercise(activeWorkout, updatedExercise.id, updatedExercise) as ActiveWorkoutType);
+      const updatedWorkout = updateExercise(activeWorkout, updatedExercise.id, updatedExercise) as ActiveWorkoutType;
+      setActiveWorkout(updatedWorkout);
+      if (updatedWorkout.isPaused) { // Check isPaused on the new state
+        savePausedWorkout(updatedWorkout);
+      }
+    }
+  };
+
+  const handleDeleteExercise = (exerciseId: string) => {
+    if (activeWorkout) {
+      const updatedExercises = activeWorkout.exercises.filter(ex => ex.id !== exerciseId);
+      const updatedWorkout = { ...activeWorkout, exercises: updatedExercises };
+      setActiveWorkout(updatedWorkout);
+      // If the workout is paused, save the changes immediately
+      if (updatedWorkout.isPaused) {
+        savePausedWorkout(updatedWorkout);
+      }
     }
   };
 
@@ -291,17 +365,35 @@ const ActiveWorkout = () => {
           </div>
 
         <div className="space-y-4 mb-6">
-          {activeWorkout.exercises.map((exercise) => (
+          {activeWorkout.exercises.map((exercise, index) => (
             <ExerciseForm
               key={exercise.id}
               exercise={exercise}
               onUpdate={handleExerciseUpdate}
-              onDelete={() => { /* onDelete is not implemented */ }}
-                isActive={!activeWorkout.isPaused} // Disable form if paused
+              onDelete={handleDeleteExercise}
+              onMoveUp={handleMoveExerciseUp}
+              onMoveDown={handleMoveExerciseDown}
+              exerciseIndex={index}
+              totalExercises={activeWorkout.exercises.length}
+              isActive={!activeWorkout.isPaused} // Disable form if paused
             />
           ))}
         </div>
 
+        {/* Add New Exercise Button */}
+        <div className="my-6 flex justify-center">
+          <Button
+            onClick={handleAddExercise}
+            variant="outline"
+            disabled={activeWorkout.isPaused}
+            className="w-full max-w-md"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Ajouter un exercice
+          </Button>
+        </div>
+
+        {/* Finish Workout Button Container */}
         <div className="flex justify-center">
           <Button
             size="lg"
