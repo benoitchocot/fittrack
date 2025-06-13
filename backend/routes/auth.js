@@ -120,4 +120,21 @@ router.post("/login", (req, res) => {
   });
 });
 
+// New GET route handler for /count using callback style
+router.get('/count', (req, res) => {
+  db.get("SELECT COUNT(*) as count FROM users", [], (err, row) => {
+    if (err) {
+      console.error("Error getting user count:", err.message);
+      return res.status(500).json({ error: "Erreur serveur lors de la récupération du nombre d'utilisateurs." });
+    }
+    if (row && typeof row.count !== 'undefined') {
+      res.json({ count: row.count });
+    } else {
+      // This case implies an issue with the query or table, or unexpected row structure
+      console.error("Failed to retrieve user count or count was undefined. Row:", row);
+      res.status(500).json({ error: "Erreur lors de la récupération du nombre d'utilisateurs." });
+    }
+  });
+});
+
 module.exports = router;
