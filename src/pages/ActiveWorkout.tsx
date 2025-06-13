@@ -20,7 +20,7 @@ import {
   startWorkout,
   updateExercise,
   finishWorkout,
-  getLastPerformedSetData, 
+  getLastCompletedSetsForExercise, 
 } from "@/services/workoutService";
 import { toast } from "sonner";
 import BASE_URL from "@/config"; // Assuming BASE_URL is defined in config
@@ -55,7 +55,7 @@ const ActiveWorkout = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showConfirmNewWorkoutDialog, setShowConfirmNewWorkoutDialog] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
-  const [historicalRefs, setHistoricalRefs] = useState<Map<string, { weight: number | null; reps: number | null } | null>>(new Map());
+  const [historicalRefs, setHistoricalRefs] = useState<Map<string, Array<{ weight: number | null; reps: number | null } | null> | null>>(new Map());
 
 
   useEffect(() => {
@@ -105,13 +105,13 @@ const ActiveWorkout = () => {
   useEffect(() => {
     const pausedWorkoutDetails = getPausedWorkout(); 
     if (activeWorkout && activeWorkout.id && (!pausedWorkoutDetails || pausedWorkoutDetails.id !== activeWorkout.id) && !loadingHistory && history) {
-      const newRefs = new Map<string, { weight: number | null; reps: number | null } | null>();
+      const newRefs = new Map<string, Array<{ weight: number | null; reps: number | null } | null> | null>();
       for (const exercise of activeWorkout.exercises) {
-        const refData = getLastPerformedSetData(exercise.name, history);
-        newRefs.set(exercise.id, refData);
+        const refDataArray = getLastCompletedSetsForExercise(exercise.name, history);
+        newRefs.set(exercise.id, refDataArray);
       }
       setHistoricalRefs(newRefs);
-      // console.log("Historical references computed:", newRefs); 
+      // console.log("Historical references computed (arrays):", newRefs); 
     } else if ((!id || !activeWorkout) && historicalRefs.size > 0) {
       setHistoricalRefs(new Map());
       // console.log("Historical references cleared.");
