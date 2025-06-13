@@ -20,6 +20,7 @@ import {
   startWorkout,
   updateExercise,
   finishWorkout,
+  getLastPerformedSetData, 
 } from "@/services/workoutService";
 import { toast } from "sonner";
 import BASE_URL from "@/config"; // Assuming BASE_URL is defined in config
@@ -54,6 +55,7 @@ const ActiveWorkout = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showConfirmNewWorkoutDialog, setShowConfirmNewWorkoutDialog] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
+  const [historicalRefs, setHistoricalRefs] = useState<Map<string, { weight: number | null; reps: number | null } | null>>(new Map());
 
 
   useEffect(() => {
@@ -98,6 +100,23 @@ const ActiveWorkout = () => {
       }
     }
   }, [id, templates, loadingTemplates, navigate]); // Removed activeWorkout from deps to avoid loop
+
+  // Effect for processing historical references
+  useEffect(() => {
+    const pausedWorkoutDetails = getPausedWorkout(); 
+    if (activeWorkout && activeWorkout.id && (!pausedWorkoutDetails || pausedWorkoutDetails.id !== activeWorkout.id) && !loadingHistory && history) {
+      const newRefs = new Map<string, { weight: number | null; reps: number | null } | null>();
+      for (const exercise of activeWorkout.exercises) {
+        const refData = getLastPerformedSetData(exercise.name, history);
+        newRefs.set(exercise.id, refData);
+      }
+      setHistoricalRefs(newRefs);
+      // console.log("Historical references computed:", newRefs); 
+    } else if ((!id || !activeWorkout) && historicalRefs.size > 0) {
+      setHistoricalRefs(new Map());
+      // console.log("Historical references cleared.");
+    }
+  }, [activeWorkout, history, loadingHistory, id]);
 
   // Timer logic
   useEffect(() => {
@@ -365,19 +384,23 @@ const ActiveWorkout = () => {
           </div>
 
         <div className="space-y-4 mb-6">
-          {activeWorkout.exercises.map((exercise, index) => (
-            <ExerciseForm
-              key={exercise.id}
-              exercise={exercise}
-              onUpdate={handleExerciseUpdate}
-              onDelete={handleDeleteExercise}
-              onMoveUp={handleMoveExerciseUp}
-              onMoveDown={handleMoveExerciseDown}
-              exerciseIndex={index}
-              totalExercises={activeWorkout.exercises.length}
-              isActive={!activeWorkout.isPaused} // Disable form if paused
-            />
-          ))}
+          {activeWorkout.exercises.map((exercise, index) => {
+            const lastPerfData = historicalRefs.get(exercise.id);
+            return (
+              <ExerciseForm
+                key={exercise.id}
+                exercise={exercise}
+                onUpdate={handleExerciseUpdate}
+                onDelete={handleDeleteExercise}
+                onMoveUp={handleMoveExerciseUp}
+                onMoveDown={handleMoveExerciseDown}
+                exerciseIndex={index}
+                totalExercises={activeWorkout.exercises.length}
+                isActive={!activeWorkout.isPaused}
+                lastPerformanceData={lastPerfData} 
+              />
+            );
+          })}
         </div>
 
         {/* Add New Exercise Button */}
