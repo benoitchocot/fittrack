@@ -13,7 +13,6 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import NotFound from "./pages/NotFound";
 import WorkoutHistoryDetail from "./pages/WorkoutHistoryDetail";
-import NutritionPage from "./pages/Nutrition";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +39,6 @@ const App = () => (
                   />
                   <Route path="/workout/:id" element={<ActiveWorkout />} />
                   <Route path="/history/:historyId" element={<WorkoutHistoryDetail />} />
-                  <Route path="/nutrition" element={<NutritionPage />} />
                   <Route path="/auth/login" element={<Login />} />
                   <Route path="/auth/register" element={<Register />} />
                   <Route path="*" element={<NotFound />} />
