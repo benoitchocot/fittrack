@@ -93,6 +93,21 @@ db.run(`
       completed BOOLEAN DEFAULT 0 
     )
   `);
+
+  // Daily Nutrition Logs
+  db.run(`
+    CREATE TABLE IF NOT EXISTS daily_nutrition_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userId INTEGER,
+      date TEXT,
+      protein REAL,
+      fiber REAL,
+      calories REAL,
+      lipids REAL,
+      glucides REAL,
+      FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
 });
 
 module.exports = db;

@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Poulet, blanc, sans peau, cuit",
+    "protein_100g": 31.0,
+    "carbs_100g": 0,
+    "lipids_100g": 3.6,
+    "calories_kcal_100g": 165,
+    "fiber_100g": 0
+  },
+  {
+    "name": "Oeuf, au plat",
+    "protein_100g": 13.0,
+    "carbs_100g": 0.8,
+    "lipids_100g": 15.0,
+    "calories_kcal_100g": 196,
+    "fiber_100g": 0
+  },
+  {
+    "name": "Riz blanc, cuit",
+    "protein_100g": 2.7,
+    "carbs_100g": 28.0,
+    "lipids_100g": 0.3,
+    "calories_kcal_100g": 130,
+    "fiber_100g": 0.4
+  },
+  {
+    "name": "Pomme, crue, avec peau",
+    "protein_100g": 0.3,
+    "carbs_100g": 14.0,
+    "lipids_100g": 0.2,
+    "calories_kcal_100g": 52,
+    "fiber_100g": 2.4
+  },
+  {
+    "name": "Brocoli, cuit à l'eau",
+    "protein_100g": 2.4,
+    "carbs_100g": 7.0,
+    "lipids_100g": 0.4,
+    "calories_kcal_100g": 35,
+    "fiber_100g": 3.3
+  }
+]

@@ -23,7 +23,12 @@ const NavBar = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-
+          <NavLink href="/" current={location.pathname === '/'} >
+            Home
+          </NavLink>
+          <NavLink href="/nutrition" current={location.pathname === '/nutrition'}>
+            Nutrition
+          </NavLink>
 
           {/* Bouton user ou logout selon présence token */}
           {token ? (
