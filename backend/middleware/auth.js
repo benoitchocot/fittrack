@@ -31,8 +31,8 @@ function authenticate(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET); // Utiliser JWT_SECRET importé // decoded will be like { userId: 123 }
     console.log('DEBUG [AuthMiddleware]: Decoded Payload:', decoded); // Log the entire decoded payload
-    req.user = { id: decoded.userId }; // Now req.user will be { id: 123 }, so req.user.id is defined
-    console.log('DEBUG [AuthMiddleware]: Set req.user to:', req.user); // Log what req.user is set to
+    req.user = decoded; // Reverted: Assign full decoded object
+    console.log('DEBUG [AuthMiddleware]: req.user after assignment:', req.user); // Updated log message
     next();
   } catch (err) { // Capturer l'erreur pour potentiellement la logger ou la gérer différemment
     console.error("[AUTH MIDDLEWARE] JWT Verification Error:", err.name, "-", err.message);

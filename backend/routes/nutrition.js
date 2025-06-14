@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/auth'); // Assuming auth.js is in 
 
 // POST /api/nutrition/log - Save a daily nutrition log
 router.post('/log', authMiddleware, (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const { protein, fiber, calories, lipids, glucides } = req.body;
 
   // Basic validation
@@ -44,8 +44,8 @@ router.post('/log', authMiddleware, (req, res) => {
 // GET /api/nutrition/log - Fetch all nutrition logs for the user
 router.get('/log', authMiddleware, (req, res) => {
   console.log('DEBUG: Entering GET /nutrition/log handler'); // New log
-  const userId = req.user.id;
-  console.log('DEBUG: userId:', userId); // New log
+  const userId = req.user.userId;
+  console.log('DEBUG: Extracted userId for query:', userId); // New log
 
   const sql = `
     SELECT id, date, protein, fiber, calories, lipids, glucides 
