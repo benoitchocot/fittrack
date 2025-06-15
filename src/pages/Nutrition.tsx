@@ -337,7 +337,7 @@ const NutritionPage: React.FC = () => {
                       </tbody>
                       <tfoot className="bg-gray-50 font-semibold">
                         <tr>
-                          <td className="px-3 py-2 text-left text-sm text-gray-900">Totals</td>
+                          <td className="px-3 py-2 text-left text-sm text-gray-900">Total</td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900"></td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.calories.toFixed(0)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.protein.toFixed(1)}</td>
