@@ -66,13 +66,45 @@ const NutritionPage: React.FC = () => {
       });
   }, []);
 
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
+
   const handleFoodNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFoodNameInput(value);
+
     if (value.length > 2) {
-      const filteredSuggestions = ciqualData.filter(item =>
-        item.name.toLowerCase().includes(value.toLowerCase())
-      );
+      const normalizedQuery = normalizeText(value);
+      const queryWords = normalizedQuery.split(' ').filter(word => word.length > 0);
+
+      if (queryWords.length === 0) {
+        setSuggestions([]);
+        setSelectedFood(null);
+        return;
+      }
+
+      const filteredSuggestions = ciqualData.filter(item => {
+        const normalizedItemName = normalizeText(item.name);
+
+        // Check if the first query word matches the start of the item name
+        if (!normalizedItemName.startsWith(queryWords[0])) {
+          return false;
+        }
+
+        // If there are more query words, check if they are all included in the item name
+        if (queryWords.length > 1) {
+          return queryWords.slice(1).every(queryWord =>
+            normalizedItemName.includes(queryWord)
+          );
+        }
+        
+        // If only one query word, startsWith check is enough
+        return true; 
+      });
       setSuggestions(filteredSuggestions.slice(0, 10));
     } else {
       setSuggestions([]);

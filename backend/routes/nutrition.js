@@ -43,9 +43,7 @@ router.post('/log', authMiddleware, (req, res) => {
 
 // GET /api/nutrition/log - Fetch all nutrition logs for the user
 router.get('/log', authMiddleware, (req, res) => {
-  console.log('DEBUG: Entering GET /nutrition/log handler'); // New log
   const userId = req.user.userId;
-  console.log('DEBUG: Extracted userId for query:', userId); // New log
 
   const sql = `
     SELECT id, date, protein, fiber, calories, lipids, glucides 
@@ -56,12 +54,10 @@ router.get('/log', authMiddleware, (req, res) => {
 
   db.all(sql, [userId], (err, rows) => {
     if (err) {
-      console.error('DEBUG: Error fetching nutrition logs from DB:', err.message); // Enhanced log
       // It's important that this console.error happens BEFORE the res.status().json()
       // to ensure we see it if the response itself fails for some reason.
       return res.status(500).json({ error: 'Failed to fetch nutrition logs.' });
     }
-    console.log('DEBUG: Successfully fetched nutrition logs. Count:', rows ? rows.length : 'N/A'); // New log
     // console.log('DEBUG: Fetched rows:', JSON.stringify(rows, null, 2)); // Optional: log all data if needed, can be verbose
     res.json(rows);
   });

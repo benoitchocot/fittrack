@@ -23,7 +23,6 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     fullUrl = baseUrl + cleanEndpoint;
   }
   
-  console.log('DEBUG: Making API call to:', fullUrl); // Ensure this line is active
 
   const response = await fetch(fullUrl, { ...options, headers });
 

@@ -3,8 +3,6 @@ const { JWT_SECRET } = require("../config"); // Importer uniquement JWT_SECRET d
 
 function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
-  console.log('DEBUG [AuthMiddleware]: Path being accessed:', req.path); // Log the path
-  console.log('DEBUG [AuthMiddleware]: Auth Header:', authHeader); // Log the full Authorization header
 
   if (!authHeader) {
     return res.status(401).json({ error: "Token manquant" });
@@ -22,7 +20,6 @@ function authenticate(req, res, next) {
   }
 
   const token = parts[1];
-  console.log('DEBUG [AuthMiddleware]: Extracted Token:', token); // Log the extracted token
 
   if (!token) {
     return res.status(401).json({ error: "Token vide: Le token ne peut pas être une chaîne vide." });
@@ -30,13 +27,10 @@ function authenticate(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET); // Utiliser JWT_SECRET importé // decoded will be like { userId: 123 }
-    console.log('DEBUG [AuthMiddleware]: Decoded Payload:', decoded); // Log the entire decoded payload
     req.user = decoded; // Reverted: Assign full decoded object
-    console.log('DEBUG [AuthMiddleware]: req.user after assignment:', req.user); // Updated log message
     next();
   } catch (err) { // Capturer l'erreur pour potentiellement la logger ou la gérer différemment
     console.error("[AUTH MIDDLEWARE] JWT Verification Error:", err.name, "-", err.message);
-    console.log('DEBUG [AuthMiddleware]: Error during JWT verify, token was:', token); // Log token on error too
     res.status(401).json({ error: "Token invalide" });
   }
 }

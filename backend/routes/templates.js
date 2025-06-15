@@ -3,9 +3,6 @@ const router = express.Router();
 const db = require("../db"); // Corrected path
 const authMiddleware = require("../middleware/auth.js");
 
-console.log(
-  "DEBUG: backend/routes/templates.js - Fichier chargé et initialisé."
-);
 
 // Promisify db.run and db.all - these can be defined once at the top or imported from a utils file
 const runExec = (query, params) =>
@@ -159,9 +156,7 @@ router.post("/", authMiddleware, async (req, res) => {
 // GET /templates - Fetch all templates for a user
 router.get("/", authMiddleware, async (req, res) => {
   const userId = req.user.userId;
-  console.log(
-    `DEBUG: GET /templates - REQUÊTE REÇUE ! (Authentifié pour userId: ${userId})`
-  );
+
 
   try {
     const templates = await runQuery(
@@ -205,9 +200,7 @@ router.get("/", authMiddleware, async (req, res) => {
 router.get("/:id", authMiddleware, async (req, res) => {
   const { id: templateId } = req.params;
   const userId = req.user.userId;
-  console.log(
-    `DEBUG: GET /templates/${templateId} - REQUÊTE REÇUE ! (Authentifié pour userId: ${userId})`
-  );
+
 
   try {
     const templates = await runQuery(
@@ -415,9 +408,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
 router.delete("/:id", authMiddleware, async (req, res) => {
   const { id: templateId } = req.params;
   const userId = req.user.userId;
-  console.log(
-    `DEBUG: DELETE /templates/${templateId} - REQUÊTE REÇUE ! (Authentifié pour userId: ${userId})`
-  );
+
 
   try {
     const result = await runExec(
