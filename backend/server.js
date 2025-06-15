@@ -5,7 +5,6 @@ const bodyParser = require("body-parser");
 const templatesRoutes = require("./routes/templates");
 const historyRoutes = require("./routes/history");
 const authRoutes = require("./routes/auth");
-const nutritionRoutes = require("./routes/nutrition");
 
 const app = express();
 const PORT = 3001;
@@ -32,7 +31,6 @@ app.use(bodyParser.json());
 app.use("/templates", templatesRoutes);
 app.use("/history", historyRoutes);
 app.use("/auth", authRoutes);
-app.use("/nutrition", nutritionRoutes);
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
 });
