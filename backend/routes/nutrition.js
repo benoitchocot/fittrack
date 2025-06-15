@@ -46,19 +46,28 @@ router.get('/log', authMiddleware, (req, res) => {
   const userId = req.user.userId;
 
   const sql = `
-    SELECT id, date, protein, fiber, calories, lipids, glucides 
-    FROM daily_nutrition_logs 
-    WHERE userId = ? 
-    ORDER BY date DESC
+  SELECT
+    MIN(id) as id, -- Keep an id, e.g., the id of the first entry of that day
+    date,
+    SUM(protein) as protein,
+    SUM(fiber) as fiber,
+    SUM(calories) as calories,
+    SUM(lipids) as lipids,
+    SUM(glucides) as glucides
+  FROM daily_nutrition_logs
+  WHERE userId = ?
+  GROUP BY date
+  ORDER BY date DESC
   `;
 
   db.all(sql, [userId], (err, rows) => {
     if (err) {
       // It's important that this console.error happens BEFORE the res.status().json()
       // to ensure we see it if the response itself fails for some reason.
+      console.error('Error fetching aggregated nutrition logs:', err.message);
       return res.status(500).json({ error: 'Failed to fetch nutrition logs.' });
     }
-    // console.log('DEBUG: Fetched rows:', JSON.stringify(rows, null, 2)); // Optional: log all data if needed, can be verbose
+    // console.log('DEBUG: Fetched aggregated rows:', JSON.stringify(rows, null, 2)); // Optional: log all data if needed, can be verbose
     res.json(rows);
   });
 });

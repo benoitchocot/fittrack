@@ -147,6 +147,11 @@ const NutritionPage: React.FC = () => {
     setWeightInput('');
   };
 
+  const handleDeleteFood = (indexToDelete: number) => {
+    setDailyLog(prevLog => prevLog.filter((_, index) => index !== indexToDelete));
+    toast.success('Aliment supprimé');
+  };
+
   useEffect(() => {
     if (dailyLog.length === 0) {
       setTotals({ protein: 0, carbs: 0, lipids: 0, calories: 0, fiber: 0 });
@@ -305,6 +310,7 @@ const NutritionPage: React.FC = () => {
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Glucides (g)</th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lipides (g)</th>
                           <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fibres (g)</th>
+                          <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -317,6 +323,15 @@ const NutritionPage: React.FC = () => {
                             <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{item.carbs.toFixed(1)}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{item.lipids.toFixed(1)}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{item.fiber.toFixed(1)}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteFood(index)}
+                              >
+                                Supprimer
+                              </Button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -329,6 +344,7 @@ const NutritionPage: React.FC = () => {
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.carbs.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.lipids.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.fiber.toFixed(1)}</td>
+                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900"></td> {/* Empty cell for Actions column in footer */}
                         </tr>
                       </tfoot>
                     </table>
