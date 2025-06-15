@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { apiFetch } from '@/utils/api';
 import { toast } from 'sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Added Tabs import
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import NutritionHistoryCard, { NutritionLogEntry } from '@/components/NutritionHistoryCard';
 
 // Define interfaces for our data structures
@@ -46,7 +46,7 @@ const NutritionPage: React.FC = () => {
   const [totals, setTotals] = useState<NutrientTotals>({
     protein: 0, carbs: 0, lipids: 0, calories: 0, fiber: 0,
   });
-  const [activeTab, setActiveTab] = useState("log"); // State for active tab
+  const [activeTab, setActiveTab] = useState("log");
   const [nutritionHistory, setNutritionHistory] = useState<NutritionLogEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState<boolean>(false);
 
@@ -63,14 +63,15 @@ const NutritionPage: React.FC = () => {
       })
       .catch((error) => {
         console.error('Error fetching CIQUAL data:', error);
+        toast.error('Error fetching CIQUAL data: ' + error.message);
       });
   }, []);
 
   const normalizeText = (text: string): string => {
     return text
       .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
   };
 
   const handleFoodNameChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -89,21 +90,21 @@ const NutritionPage: React.FC = () => {
 
       const filteredSuggestions = ciqualData.filter(item => {
         const normalizedItemName = normalizeText(item.name);
-
-        // Check if the first query word matches the start of the item name
+        
+        // Check if the item name starts with the first query word
         if (!normalizedItemName.startsWith(queryWords[0])) {
           return false;
         }
 
-        // If there are more query words, check if they are all included in the item name
+        // If there are more query words, check if all of them are included in the item name
         if (queryWords.length > 1) {
-          return queryWords.slice(1).every(queryWord =>
-            normalizedItemName.includes(queryWord)
-          );
+          for (let i = 1; i < queryWords.length; i++) {
+            if (!normalizedItemName.includes(queryWords[i])) {
+              return false;
+            }
+          }
         }
-        
-        // If only one query word, startsWith check is enough
-        return true; 
+        return true;
       });
       setSuggestions(filteredSuggestions.slice(0, 10));
     } else {
@@ -120,12 +121,12 @@ const NutritionPage: React.FC = () => {
   
   const handleAddFood = () => {
     if (!selectedFood) {
-      alert('Please select a food item from the suggestions.');
+      toast.error('Please select a food item from the suggestions.');
       return;
     }
     const weight = parseFloat(weightInput);
     if (isNaN(weight) || weight <= 0) {
-      alert('Please enter a valid positive weight.');
+      toast.error('Please enter a valid positive weight.');
       return;
     }
 
@@ -169,27 +170,25 @@ const NutritionPage: React.FC = () => {
     if (activeTab === 'history') {
       setHistoryLoading(true);
       apiFetch('nutrition/log')
-        .then(response => { // Renamed 'data' to 'response'
-          if (!response.ok) { // Check for HTTP errors
-            // You might want to try to parse error response from backend if available
-            // For now, just throwing a generic error
+        .then(response => {
+          if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
-          return response.json(); // Parse the JSON body
+          return response.json();
         })
-        .then(jsonData => { // This 'jsonData' is the actual array of NutritionLogEntry
+        .then(jsonData => {
           setNutritionHistory(jsonData as NutritionLogEntry[]);
         })
         .catch(error => {
           console.error('Error fetching or parsing nutrition history:', error);
-          toast.error('Failed to fetch nutrition history: ' + error.message); // Include error message in toast
-          setNutritionHistory([]); // Clear history on error
+          toast.error('Failed to fetch nutrition history: ' + error.message);
+          setNutritionHistory([]);
         })
         .finally(() => {
           setHistoryLoading(false);
         });
     }
-  }, [activeTab]); // Dependency: activeTab
+  }, [activeTab]);
 
   const handleSaveLog = async () => {
     if (dailyLog.length === 0) {
@@ -201,7 +200,7 @@ const NutritionPage: React.FC = () => {
       fiber: totals.fiber,
       calories: totals.calories,
       lipids: totals.lipids,
-      glucides: totals.carbs,
+      glucides: totals.carbs, // Ensure backend expects 'glucides'
     };
     try {
       await apiFetch('nutrition/log', {
@@ -210,10 +209,14 @@ const NutritionPage: React.FC = () => {
       });
       toast.success('Daily log saved successfully!');
       setDailyLog([]);
+      // Reset other relevant states if needed
       setFoodNameInput('');
       setSelectedFood(null);
       setSuggestions([]);
       setWeightInput('');
+      setTotals({ protein: 0, carbs: 0, lipids: 0, calories: 0, fiber: 0 });
+
+
     } catch (error) {
       console.error('Failed to save daily log:', error);
       let errorMessage = 'Failed to save daily log. Please try again.';
@@ -225,7 +228,7 @@ const NutritionPage: React.FC = () => {
   };
 
   return (
-    <div> {/* Root div */}
+    <div>
       <NavBar />
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Nutrition Tracker</h1>
@@ -237,7 +240,7 @@ const NutritionPage: React.FC = () => {
           </TabsList>
 
           <TabsContent value="log" className="mt-4">
-            <Card className="mb-6"> {/* Card for "Add Food Item" */}
+            <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Ajouter un aliment</CardTitle>
               </CardHeader>
@@ -283,7 +286,7 @@ const NutritionPage: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="mb-6"> {/* Card for "Today's Log" */}
+            <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Récapitulatif</CardTitle>
               </CardHeader>
@@ -320,11 +323,11 @@ const NutritionPage: React.FC = () => {
                       <tfoot className="bg-gray-50 font-semibold">
                         <tr>
                           <td className="px-3 py-2 text-left text-sm text-gray-900">Totals</td>
-                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900"></td> {/* Empty cell for weight column */}
+                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900"></td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.calories.toFixed(0)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.protein.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.carbs.toFixed(1)}</td>
-                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.lipids.toFixed(1)}</td> {/* Corrected py_2 to py-2 */}
+                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.lipids.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{totals.fiber.toFixed(1)}</td>
                         </tr>
                       </tfoot>
@@ -346,7 +349,7 @@ const NutritionPage: React.FC = () => {
             ) : nutritionHistory.length === 0 ? (
               <p>No nutrition history found.</p>
             ) : (
-              <div className="space-y-4 p-4"> {/* Added p-4 for padding */}
+              <div className="space-y-4 p-4">
                 {nutritionHistory.map((logEntry) => (
                   <NutritionHistoryCard key={logEntry.id} logEntry={logEntry} />
                 ))}
@@ -354,8 +357,8 @@ const NutritionPage: React.FC = () => {
             )}
           </TabsContent>
         </Tabs>
-      </div> {/* End of container div */}
-    </div> // End of root div
+      </div>
+    </div>
   );
 };
 
