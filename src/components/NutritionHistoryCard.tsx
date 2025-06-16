@@ -18,6 +18,7 @@ export interface HistoricFoodItem {
 }
 
 export interface NutritionLogEntry {
+  id: number; 
   date: string;
   total_protein: number;
   total_fiber: number;  
@@ -63,30 +64,42 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Calories</p>
-                <p className="font-medium">{logEntry.calories.toFixed(0)} kcal</p>
+                <p className="font-medium">{logEntry.total_calories.toFixed(0)} kcal</p>
               </div>
             </div>
           </AccordionTrigger>
           <AccordionContent>
             <div className="p-4"> {/* Outer padding for the whole content area */}
+              {/* Display Comment */}
+              {logEntry.comment && (
+                <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                  <p className="text-sm italic text-gray-700">"{logEntry.comment}"</p>
+                </div>
+              )}
+              {!logEntry.comment && (
+                 <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                    <p className="text-sm italic text-gray-500">Aucun commentaire pour ce jour.</p>
+                </div>
+              )}
+
               {/* Existing totals section */}
               <h4 className="text-md font-semibold mb-2 text-gray-800">Résumé journalier des totaux</h4>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-6">
                 <div>
                   <p className="text-xs text-muted-foreground">Protéines</p>
-                  <p className="font-medium">{logEntry.protein.toFixed(1)} g</p>
+                  <p className="font-medium">{logEntry.total_protein.toFixed(1)} g</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Lipides</p>
-                  <p className="font-medium">{logEntry.lipids.toFixed(1)} g</p>
+                  <p className="font-medium">{logEntry.total_lipids.toFixed(1)} g</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Glucides</p>
-                  <p className="font-medium">{logEntry.glucides.toFixed(1)} g</p>
+                  <p className="font-medium">{logEntry.total_glucides.toFixed(1)} g</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Fibres</p>
-                  <p className="font-medium">{logEntry.fiber.toFixed(1)} g</p>
+                  <p className="font-medium">{logEntry.total_fiber.toFixed(1)} g</p>
                 </div>
               </div>
 

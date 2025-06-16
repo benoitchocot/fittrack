@@ -2,12 +2,12 @@ import React, { useState, useEffect, ChangeEvent } from 'react';
 import NavBar from '@/components/NavBar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button'; // Standard Button, used for Add, Save, Delete
+import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { apiFetch } from '@/utils/api';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import NutritionHistoryCard, { NutritionLogEntry, HistoricFoodItem } from '@/components/NutritionHistoryCard'; // Import HistoricFoodItem
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 
 // Define interfaces for our data structures
 interface FoodItem {
@@ -56,7 +56,7 @@ const NutritionPage: React.FC = () => {
     fetch('/ciqual_data.json')
       .then((response) => {
         if (!response.ok) {
-          throw new Error('Erreur de chargement des données : ' + response.statusText);
+          throw new Error('Network response was not ok');
         }
         return response.json();
       })
@@ -64,8 +64,8 @@ const NutritionPage: React.FC = () => {
         setCiqualData(data);
       })
       .catch((error) => {
-        console.error('Erreur:', error);
-        toast.error('Erreur dans les données: ' + error.message);
+        console.error('Error fetching CIQUAL data:', error);
+        toast.error('Error fetching CIQUAL data: ' + error.message);
       });
   }, []);
 
@@ -123,12 +123,12 @@ const NutritionPage: React.FC = () => {
   
   const handleAddFood = () => {
     if (!selectedFood) {
-      toast.error('Sélectionnez un aliment dans la liste de suggestions.');
+      toast.error('Please select a food item from the suggestions.');
       return;
     }
     const weight = parseFloat(weightInput);
     if (isNaN(weight) || weight <= 0) {
-      toast.error('Veuillez entrer un poids valide supérieur à 0.');
+      toast.error('Please enter a valid positive weight.');
       return;
     }
 
@@ -207,9 +207,9 @@ const NutritionPage: React.FC = () => {
       fiber: totals.fiber,
       calories: totals.calories,
       lipids: totals.lipids,
-      glucides: totals.carbs,
+      glucides: totals.carbs, // Ensure backend expects 'glucides'
       dailyLog: dailyLog, // Pass the individual items
-      comment: currentComment, // Pass the comment// Ensure backend expects 'glucides'
+      comment: currentComment, // Pass the comment
     };
     try {
       await apiFetch('nutrition/log', {
@@ -392,7 +392,7 @@ const NutritionPage: React.FC = () => {
                 rows={3} // Optional: suggest a number of rows
               />
             </div>
-            
+
             <Button onClick={handleSaveLog} className="mt-4">
               Sauvegarder les aliments  
             </Button>
@@ -400,9 +400,9 @@ const NutritionPage: React.FC = () => {
 
           <TabsContent value="history" className="mt-4">
             {historyLoading ? (
-              <p>Chargement...</p>
+              <p>Loading history...</p>
             ) : nutritionHistory.length === 0 ? (
-              <p>Pas d'historiques.</p>
+              <p>No nutrition history found.</p>
             ) : (
               <div className="space-y-4 p-4">
                 {nutritionHistory.map((logEntry) => (
