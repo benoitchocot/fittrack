@@ -126,5 +126,20 @@ db.run(`
     )
   `);
 });
+  // Add comment column to daily_nutrition_logs table if it doesn't exist
+  db.run("ALTER TABLE daily_nutrition_logs ADD COLUMN comment TEXT", (err) => {
+    if (err) {
+      // Check if the error is because the column already exists
+      if (err.message.includes("duplicate column name")) {
+        // This is expected if the column was already added manually or by a previous run
+        console.log("Column 'comment' already exists in 'daily_nutrition_logs' table.");
+      } else {
+        // For other errors, log them
+        console.error("Error adding 'comment' column to 'daily_nutrition_logs' table:", err.message);
+      }
+    } else {
+      console.log("Column 'comment' added to 'daily_nutrition_logs' table or already existed if no error.");
+    }
+  });
 
 module.exports = db;

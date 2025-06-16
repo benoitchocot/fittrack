@@ -184,6 +184,10 @@ router.get('/log', authMiddleware, async (req, res) => {
       if (aggregatedData[item.item_date]) { 
         const { item_date, log_id, ...cleanedItem } = item; // Remove helper fields before adding to items array
         aggregatedData[item.item_date].items.push(cleanedItem);
+      } else {
+        // This case should ideally not happen if data is consistent and queries are correct
+        // but adding a log helps identify if it does.
+        console.warn(`Item with log_id ${item.log_id} references date ${item.item_date} which was not found in the primary daily_nutrition_logs processing. Skipping item.`);
       }
     }
     
