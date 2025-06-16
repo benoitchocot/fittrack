@@ -212,7 +212,7 @@ const NutritionPage: React.FC = () => {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      toast.success('Daily log saved successfully!');
+      toast.success('Ingrédients enregistrés !');
       setDailyLog([]);
       // Reset other relevant states if needed
       setFoodNameInput('');
@@ -223,8 +223,8 @@ const NutritionPage: React.FC = () => {
 
 
     } catch (error) {
-      console.error('Failed to save daily log:', error);
-      let errorMessage = 'Failed to save daily log. Please try again.';
+      console.error('Erreur pour sauvegarder les ingrédients:', error);
+      let errorMessage = 'Erreur pour sauvegarder les ingrédients, veuillez réessayer.';
       if (error instanceof Error) {
         errorMessage = error.message;
       }
@@ -361,9 +361,9 @@ const NutritionPage: React.FC = () => {
 
           <TabsContent value="history" className="mt-4">
             {historyLoading ? (
-              <p>Loading history...</p>
+              <p>LChargement...</p>
             ) : nutritionHistory.length === 0 ? (
-              <p>No nutrition history found.</p>
+              <p>Pas d'historique.</p>
             ) : (
               <div className="space-y-4 p-4">
                 {nutritionHistory.map((logEntry) => (

@@ -23,8 +23,8 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry })
   if (!logEntry) {
     return (
       <Card className="mb-4 border-red-500">
-        <CardHeader><CardTitle className="text-red-500">Invalid Log Data</CardTitle></CardHeader>
-        <CardContent><p>Log entry data is missing.</p></CardContent>
+        <CardHeader><CardTitle className="text-red-500">Données incorrectes</CardTitle></CardHeader>
+        <CardContent><p>Pas de données</p></CardContent>
       </Card>
     );
   }
