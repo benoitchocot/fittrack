@@ -139,12 +139,12 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
               )}
               {logEntry.items && logEntry.items.length > 0 && (
                 <div className="mt-4 text-right">
-                  <button
+                  {/* <button
                     onClick={() => onReloadLog(logEntry.items)}
                     className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                   >
                     Recharger ce journal
-                  </button>
+                  </button> */}
                 </div>
               )}
             </div>
