@@ -170,11 +170,12 @@ router.get('/log', authMiddleware, async (req, res) => {
         };
       }
       // Add current log's nutrient values to the totals for this date
-      aggregatedData[log.date].total_protein += log.protein;
-      aggregatedData[log.date].total_fiber += log.fiber;
-      aggregatedData[log.date].total_calories += log.calories;
-      aggregatedData[log.date].total_lipids += log.lipids;
-      aggregatedData[log.date].total_glucides += log.glucides;
+      // Ensure that even if log.protein (etc.) is null, it's treated as 0 for summation.
+      aggregatedData[log.date].total_protein += (log.protein || 0);
+      aggregatedData[log.date].total_fiber += (log.fiber || 0);
+      aggregatedData[log.date].total_calories += (log.calories || 0);
+      aggregatedData[log.date].total_lipids += (log.lipids || 0);
+      aggregatedData[log.date].total_glucides += (log.glucides || 0);
     }
 
     // Step 2: Distribute all logged food items to their respective dates
