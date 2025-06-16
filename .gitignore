@@ -6,8 +6,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-backend/data.sqlite3
-backend/data/data.sqlite3
 
 node_modules
 dist
