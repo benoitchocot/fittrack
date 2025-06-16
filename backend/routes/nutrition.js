@@ -6,8 +6,8 @@ const authMiddleware = require('../middleware/auth'); // Assuming auth.js is in 
 // POST /api/nutrition/log - Save a daily nutrition log and its individual food items
 router.post('/log', authMiddleware, (req, res) => {
   const userId = req.user.userId;
-  // dailyLog is an array of individual food items
-  const { protein, fiber, calories, lipids, glucides, dailyLog } = req.body;
+  // dailyLog is an array of individual food items, comment is optional
+  const { protein, fiber, calories, lipids, glucides, dailyLog, comment } = req.body;
 
   // Basic validation for totals
   if (protein == null || fiber == null || calories == null || lipids == null || glucides == null) {
@@ -20,12 +20,13 @@ router.post('/log', authMiddleware, (req, res) => {
   }
 
   const currentDate = new Date().toISOString().slice(0, 10);
+  const commentValue = comment || null; // Ensure null is inserted if comment is undefined or empty string
 
   const sqlDailyLogTotals = `
-    INSERT INTO daily_nutrition_logs (userId, date, protein, fiber, calories, lipids, glucides)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO daily_nutrition_logs (userId, date, protein, fiber, calories, lipids, glucides, comment)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  const paramsDailyLogTotals = [userId, currentDate, protein, fiber, calories, lipids, glucides];
+  const paramsDailyLogTotals = [userId, currentDate, protein, fiber, calories, lipids, glucides, commentValue];
 
   db.run(sqlDailyLogTotals, paramsDailyLogTotals, function(err) {
     if (err) {
@@ -90,83 +91,116 @@ router.post('/log', authMiddleware, (req, res) => {
       fiber,
       calories,
       lipids,
-      glucides
+      glucides,
+      comment: commentValue
       // Note: individual items are not returned in this response to keep it concise
     });
   });
 });
 
-// GET /api/nutrition/log - Fetch all nutrition logs for the user, including individual items
+// GET /api/nutrition/log - Fetch true daily aggregated nutrition logs for the user
 router.get('/log', authMiddleware, async (req, res) => {
   const userId = req.user.userId;
 
-  const sqlDailyLogs = `
-    SELECT id, date, protein, fiber, calories, lipids, glucides 
-    FROM daily_nutrition_logs 
-    WHERE userId = ? 
-    ORDER BY date DESC
+  // Fetches all daily log entries for the user.
+  // Ordered by date DESC, then id DESC to ensure the first entry encountered for a date is the latest.
+  const sqlFetchDailyLogs = `
+    SELECT id, date, protein, fiber, calories, lipids, glucides, comment
+    FROM daily_nutrition_logs
+    WHERE userId = ?
+    ORDER BY date DESC, id DESC;
+  `;
+
+  // Fetches all logged food items for the user, joined with their corresponding daily_nutrition_logs entry
+  // to get the date for each item. This is crucial for grouping items by date.
+  const sqlFetchAllUserItems = `
+    SELECT li.log_id, li.name, li.weight, li.protein, li.carbs, li.lipids, li.calories, li.fiber, dl.date as item_date
+    FROM logged_food_items li
+    JOIN daily_nutrition_logs dl ON li.log_id = dl.id
+    WHERE dl.userId = ?;
   `;
 
   try {
-    // Promisify db.all for fetching daily logs
-    const getDailyLogs = () => new Promise((resolve, reject) => {
-      db.all(sqlDailyLogs, [userId], (err, dayEntries) => {
+    // Promisify db.all calls
+    const dailyLogsPromise = new Promise((resolve, reject) => {
+      db.all(sqlFetchDailyLogs, [userId], (err, rows) => {
         if (err) {
-          console.error('Error fetching daily nutrition logs:', err.message);
-          // Pass an object with status and message for specific error handling
-          reject({ status: 500, message: 'Failed to fetch daily nutrition logs.' });
-          return;
+          console.error('Error fetching daily nutrition logs for aggregation:', err.message);
+          reject(err);
+        } else {
+          resolve(rows);
         }
-        resolve(dayEntries);
       });
     });
 
-    const dayEntries = await getDailyLogs();
+    const itemsPromise = new Promise((resolve, reject) => {
+      db.all(sqlFetchAllUserItems, [userId], (err, rows) => {
+        if (err) {
+          console.error('Error fetching all user items for aggregation:', err.message);
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
 
-    if (!dayEntries || dayEntries.length === 0) {
-      return res.json([]); // Return empty array if no logs found
+    // Await both promises concurrently
+    const [dailyLogsResults, allUserItemsResults] = await Promise.all([dailyLogsPromise, itemsPromise]);
+
+    if (!dailyLogsResults || dailyLogsResults.length === 0) {
+      return res.json([]); // No logs found for the user
     }
 
-    // For each day entry, fetch its associated food items
-    const enrichedDayEntries = await Promise.all(
-      dayEntries.map(async (dayEntry) => {
-        const sqlLoggedItems = `
-          SELECT name, weight, protein, carbs, lipids, calories, fiber 
-          FROM logged_food_items 
-          WHERE log_id = ?
-        `;
-        
-        // Promisify db.all for fetching items for a specific log
-        const getItemsForLog = (logId) => new Promise((resolve, reject) => {
-          db.all(sqlLoggedItems, [logId], (err, items) => {
-            if (err) {
-              // Log error but don't fail the entire request for one log's items
-              console.error(`Error fetching items for log_id ${logId}:`, err.message);
-              // Resolve with empty items array on error for this specific log_id
-              // This ensures that if one log's items fail, others can still be returned.
-              resolve([]); 
-              return;
-            }
-            resolve(items);
-          });
-        });
+    const aggregatedData = {};
 
-        const items = await getItemsForLog(dayEntry.id);
-        // Ensure 'items' property is always an array, even if null/undefined from DB
-        return { ...dayEntry, items: items || [] }; 
-      })
-    );
+    // Step 1: Process daily_nutrition_logs to sum totals and establish the latest comment/id per date
+    for (const log of dailyLogsResults) {
+      if (!aggregatedData[log.date]) {
+        // First time seeing this date (due to ORDER BY id DESC), so this is the latest entry for this date.
+        aggregatedData[log.date] = {
+          id: log.id, // ID of the latest log entry for this date
+          date: log.date,
+          total_protein: 0, // Initialize sums
+          total_fiber: 0,
+          total_calories: 0,
+          total_lipids: 0,
+          total_glucides: 0,
+          comment: log.comment, // Comment from the latest entry for this date
+          items: []             // Initialize items array
+        };
+      }
+      // Add current log's nutrient values to the totals for this date
+      aggregatedData[log.date].total_protein += log.protein;
+      aggregatedData[log.date].total_fiber += log.fiber;
+      aggregatedData[log.date].total_calories += log.calories;
+      aggregatedData[log.date].total_lipids += log.lipids;
+      aggregatedData[log.date].total_glucides += log.glucides;
+    }
 
-    res.json(enrichedDayEntries);
+    // Step 2: Distribute all logged food items to their respective dates
+    for (const item of allUserItemsResults) {
+      // item_date is the date of the daily_nutrition_log this item belongs to
+      if (aggregatedData[item.item_date]) { 
+        const { item_date, log_id, ...cleanedItem } = item; // Remove helper fields before adding to items array
+        aggregatedData[item.item_date].items.push(cleanedItem);
+      }
+    }
+    
+    // Step 3: Convert the aggregatedData object into an array, already sorted by date due to initial query and processing order.
+    // If a specific sort order is absolutely required for the final array (e.g. if processing order didn't guarantee it):
+    // const responseArray = Object.values(aggregatedData).sort((a, b) => new Date(b.date) - new Date(a.date));
+    // However, since dailyLogsResults was sorted by date DESC, the keys in aggregatedData should be processed in a way
+    // that Object.values() might retain this order in modern JS, but explicit sort is safer.
+    const responseArray = Object.values(aggregatedData).sort((a,b) => b.date.localeCompare(a.date));
+
+
+    res.json(responseArray);
 
   } catch (error) {
-    // Handle errors from the getDailyLogs promise or other unexpected errors
-    if (error && error.status) { // Check if error is the object we created
-      return res.status(error.status).json({ error: error.message });
-    }
-    // Fallback for other types of unexpected errors
-    console.error('Unexpected error in GET /api/nutrition/log:', error);
-    return res.status(500).json({ error: 'An unexpected error occurred while fetching nutrition logs.' });
+    // Log the detailed error for server-side debugging
+    console.error('Failed to fetch true aggregated nutrition logs:', error.message, error.stack);
+    // Send a generic error response to the client
+    res.status(500).json({ error: 'Failed to fetch aggregated nutrition logs. Please try again later.' });
   }
 });
 

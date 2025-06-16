@@ -7,6 +7,7 @@ import { apiFetch } from '@/utils/api';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import NutritionHistoryCard, { NutritionLogEntry, HistoricFoodItem } from '@/components/NutritionHistoryCard'; // Import HistoricFoodItem
+import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 
 // Define interfaces for our data structures
 interface FoodItem {
@@ -49,6 +50,7 @@ const NutritionPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("log");
   const [nutritionHistory, setNutritionHistory] = useState<NutritionLogEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState<boolean>(false);
+  const [currentComment, setCurrentComment] = useState(''); // State for the comment
 
   useEffect(() => {
     fetch('/ciqual_data.json')
@@ -205,7 +207,9 @@ const NutritionPage: React.FC = () => {
       fiber: totals.fiber,
       calories: totals.calories,
       lipids: totals.lipids,
-      glucides: totals.carbs, // Ensure backend expects 'glucides'
+      glucides: totals.carbs,
+      dailyLog: dailyLog, // Pass the individual items
+      comment: currentComment, // Pass the comment// Ensure backend expects 'glucides'
     };
     try {
       await apiFetch('nutrition/log', {
@@ -219,6 +223,7 @@ const NutritionPage: React.FC = () => {
       setSelectedFood(null);
       setSuggestions([]);
       setWeightInput('');
+      setCurrentComment(''); // Reset comment field
       setTotals({ protein: 0, carbs: 0, lipids: 0, calories: 0, fiber: 0 });
 
 
@@ -374,6 +379,20 @@ const NutritionPage: React.FC = () => {
               <CardFooter />
             </Card>
 
+            <div className="mt-6 mb-4"> {/* Added margin top and bottom for spacing */}
+              <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1">
+                Commentaire (facultatif)
+              </label>
+              <Textarea
+                id="comment"
+                value={currentComment}
+                onChange={(e) => setCurrentComment(e.target.value)}
+                placeholder="Notes sur la journée, sensations, etc."
+                className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                rows={3} // Optional: suggest a number of rows
+              />
+            </div>
+            
             <Button onClick={handleSaveLog} className="mt-4">
               Sauvegarder les aliments  
             </Button>

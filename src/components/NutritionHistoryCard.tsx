@@ -18,14 +18,14 @@ export interface HistoricFoodItem {
 }
 
 export interface NutritionLogEntry {
-  id: number;
-  date: string; // Should be YYYY-MM-DD
-  protein: number; // Total protein for the day
-  fiber: number;   // Total fiber for the day
-  calories: number; // Total calories for the day
-  lipids: number;   // Total lipids for the day
-  glucides: number; // Total glucides (overall carbs) for the day
-  items: HistoricFoodItem[]; // Array of individual food items
+  date: string;
+  total_protein: number;
+  total_fiber: number;  
+  total_calories: number;
+  total_lipids: number;  
+  total_glucides: number;
+  comment: string | null; 
+  items: HistoricFoodItem[];
 }
 
 interface NutritionHistoryCardProps {

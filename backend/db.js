@@ -98,13 +98,14 @@ db.run(`
   db.run(`
     CREATE TABLE IF NOT EXISTS daily_nutrition_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userId INTEGER,
-      date TEXT,
-      protein REAL,
-      fiber REAL,
-      calories REAL,
-      lipids REAL,
-      glucides REAL,
+      userId INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      protein REAL DEFAULT 0,
+      fiber REAL DEFAULT 0,
+      calories REAL DEFAULT 0,
+      lipids REAL DEFAULT 0,
+      glucides REAL DEFAULT 0,
+      comment TEXT,
       FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
