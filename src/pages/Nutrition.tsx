@@ -1,12 +1,12 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import NavBar from '@/components/NavBar';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'; // Standard Button, used for Add, Save, Delete
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { apiFetch } from '@/utils/api';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import NutritionHistoryCard, { NutritionLogEntry } from '@/components/NutritionHistoryCard';
+import NutritionHistoryCard, { NutritionLogEntry, HistoricFoodItem } from '@/components/NutritionHistoryCard'; // Import HistoricFoodItem
 
 // Define interfaces for our data structures
 interface FoodItem {
@@ -54,7 +54,7 @@ const NutritionPage: React.FC = () => {
     fetch('/ciqual_data.json')
       .then((response) => {
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error('Erreur de chargement des données : ' + response.statusText);
         }
         return response.json();
       })
@@ -62,8 +62,8 @@ const NutritionPage: React.FC = () => {
         setCiqualData(data);
       })
       .catch((error) => {
-        console.error('Error fetching CIQUAL data:', error);
-        toast.error('Error fetching CIQUAL data: ' + error.message);
+        console.error('Erreur:', error);
+        toast.error('Erreur dans les données: ' + error.message);
       });
   }, []);
 
@@ -121,12 +121,12 @@ const NutritionPage: React.FC = () => {
   
   const handleAddFood = () => {
     if (!selectedFood) {
-      toast.error('Please select a food item from the suggestions.');
+      toast.error('Sélectionnez un aliment dans la liste de suggestions.');
       return;
     }
     const weight = parseFloat(weightInput);
     if (isNaN(weight) || weight <= 0) {
-      toast.error('Please enter a valid positive weight.');
+      toast.error('Veuillez entrer un poids valide supérieur à 0.');
       return;
     }
 
@@ -212,7 +212,7 @@ const NutritionPage: React.FC = () => {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      toast.success('Ingrédients enregistrés !');
+      toast.success('Daily log saved successfully!');
       setDailyLog([]);
       // Reset other relevant states if needed
       setFoodNameInput('');
@@ -223,13 +223,33 @@ const NutritionPage: React.FC = () => {
 
 
     } catch (error) {
-      console.error('Erreur pour sauvegarder les ingrédients:', error);
-      let errorMessage = 'Erreur pour sauvegarder les ingrédients, veuillez réessayer.';
+      console.error('Failed to save daily log:', error);
+      let errorMessage = 'Failed to save daily log. Please try again.';
       if (error instanceof Error) {
         errorMessage = error.message;
       }
       toast.error(errorMessage);
     }
+  };
+
+  const handleReloadLog = (itemsToReload: HistoricFoodItem[], dateOfLog: string) => {
+    const reloadedLogItems: LoggedFood[] = itemsToReload.map(item => ({
+      name: item.name,
+      weight: item.weight,
+      protein: item.protein,
+      carbs: item.carbs,
+      lipids: item.lipids,
+      calories: item.calories,
+      fiber: item.fiber,
+    }));
+    setDailyLog(reloadedLogItems); // This will trigger the useEffect for totals
+    setActiveTab("log"); // Switch to the Menu/Log tab
+    
+    // Format date for the toast message
+    const formattedDate = new Date(dateOfLog + 'T00:00:00Z').toLocaleDateString('fr-FR', {
+      year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+    });
+    toast.success(`Journal rechargé avec les aliments du ${formattedDate}.`);
   };
 
   return (
@@ -363,11 +383,14 @@ const NutritionPage: React.FC = () => {
             {historyLoading ? (
               <p>Chargement...</p>
             ) : nutritionHistory.length === 0 ? (
-              <p>Pas d'historique.</p>
+              <p>Pas d'historiques.</p>
             ) : (
               <div className="space-y-4 p-4">
                 {nutritionHistory.map((logEntry) => (
-                  <NutritionHistoryCard key={logEntry.id} logEntry={logEntry} />
+                  <NutritionHistoryCard 
+                    key={logEntry.id} 
+                    logEntry={logEntry} 
+                    onReloadLog={() => handleReloadLog(logEntry.items, logEntry.date)} />
                 ))}
               </div>
             )}

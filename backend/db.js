@@ -108,6 +108,22 @@ db.run(`
       FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+
+  // Logged Food Items (details for each daily_nutrition_logs entry)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS logged_food_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      log_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      weight REAL NOT NULL,
+      protein REAL NOT NULL,
+      carbs REAL NOT NULL,
+      lipids REAL NOT NULL,
+      calories REAL NOT NULL,
+      fiber REAL NOT NULL,
+      FOREIGN KEY(log_id) REFERENCES daily_nutrition_logs(id) ON DELETE CASCADE
+    )
+  `);
 });
 
 module.exports = db;
