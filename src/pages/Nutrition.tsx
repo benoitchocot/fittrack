@@ -379,19 +379,7 @@ const NutritionPage: React.FC = () => {
               <CardFooter />
             </Card>
 
-            <div className="mt-6 mb-4"> {/* Added margin top and bottom for spacing */}
-              <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1">
-                Commentaire (facultatif)
-              </label>
-              <Textarea
-                id="comment"
-                value={currentComment}
-                onChange={(e) => setCurrentComment(e.target.value)}
-                placeholder="Notes sur la journée, sensations, etc."
-                className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                rows={3} // Optional: suggest a number of rows
-              />
-            </div>
+           
 
             <Button onClick={handleSaveLog} className="mt-4">
               Sauvegarder les aliments  
