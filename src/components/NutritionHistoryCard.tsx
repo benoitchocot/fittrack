@@ -78,7 +78,7 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
               )}
               {!logEntry.comment && (
                  <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
-                    <p className="text-sm italic text-gray-500">Aucun commentaire pour ce jour.</p>
+                    <p className="text-sm italic text-gray-500"></p>
                 </div>
               )}
 
