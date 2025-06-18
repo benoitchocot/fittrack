@@ -114,7 +114,7 @@ router.get('/log', authMiddleware, async (req, res) => {
   // Fetches all logged food items for the user, joined with their corresponding daily_nutrition_logs entry
   // to get the date for each item. This is crucial for grouping items by date.
   const sqlFetchAllUserItems = `
-    SELECT li.log_id, li.name, li.weight, li.protein, li.carbs, li.lipids, li.calories, li.fiber, dl.date as item_date
+    SELECT li.id as itemId, li.log_id, li.name, li.weight, li.protein, li.carbs, li.lipids, li.calories, li.fiber, dl.date as item_date
     FROM logged_food_items li
     JOIN daily_nutrition_logs dl ON li.log_id = dl.id
     WHERE dl.userId = ?;
@@ -181,8 +181,14 @@ router.get('/log', authMiddleware, async (req, res) => {
     // Step 2: Distribute all logged food items to their respective dates
     for (const item of allUserItemsResults) {
       // item_date is the date of the daily_nutrition_log this item belongs to
-      if (aggregatedData[item.item_date]) { 
-        const { item_date, log_id, ...cleanedItem } = item; // Remove helper fields before adding to items array
+      if (aggregatedData[item.item_date]) {
+        // Destructure item, explicitly keeping itemId, and removing item_date and log_id from the main spread.
+        // The rest of the properties (name, weight, protein, etc.) will be in otherFields.
+        const { item_date, log_id, itemId, ...otherFields } = item;
+        const cleanedItem = {
+          itemId, // Ensure itemId is part of the object
+          ...otherFields
+        };
         aggregatedData[item.item_date].items.push(cleanedItem);
       } else {
         // This case should ideally not happen if data is consistent and queries are correct
@@ -206,6 +212,143 @@ router.get('/log', authMiddleware, async (req, res) => {
     console.error('Failed to fetch true aggregated nutrition logs:', error.message, error.stack);
     // Send a generic error response to the client
     res.status(500).json({ error: 'Failed to fetch aggregated nutrition logs. Please try again later.' });
+  }
+});
+
+// DELETE /api/nutrition/log/item/:itemId - Delete a specific food item from a nutrition log
+router.delete('/log/item/:itemId', authMiddleware, async (req, res) => {
+  const { itemId } = req.params;
+  const userId = req.user.userId;
+
+  // Step 1: Fetch the item and its nutrient values, and verify ownership
+  const getFoodItemSql = `
+    SELECT
+      lfi.id AS itemId,
+      lfi.log_id AS logId,
+      lfi.protein,
+      lfi.carbs,
+      lfi.lipids,
+      lfi.calories,
+      lfi.fiber,
+      dnl.userId
+    FROM logged_food_items lfi
+    JOIN daily_nutrition_logs dnl ON lfi.log_id = dnl.id
+    WHERE lfi.id = ?;
+  `;
+
+  try {
+    const item = await new Promise((resolve, reject) => {
+      db.get(getFoodItemSql, [itemId], (err, row) => {
+        if (err) {
+          console.error('Error fetching food item:', err.message);
+          return reject(err);
+        }
+        resolve(row);
+      });
+    });
+
+    if (!item) {
+      return res.status(404).json({ error: 'Food item not found.' });
+    }
+
+    if (item.userId !== userId) {
+      return res.status(403).json({ error: 'User not authorized to delete this item.' });
+    }
+
+    // Step 2: Delete the item from logged_food_items
+    const deleteFoodItemSql = 'DELETE FROM logged_food_items WHERE id = ?';
+    await new Promise((resolve, reject) => {
+      db.run(deleteFoodItemSql, [itemId], function(err) {
+        if (err) {
+          console.error('Error deleting food item:', err.message);
+          return reject(err);
+        }
+        if (this.changes === 0) {
+          // Should not happen if item was fetched successfully, but good to check
+          return reject(new Error('Food item not found for deletion.'));
+        }
+        resolve();
+      });
+    });
+
+    // Step 3: Subtract its nutrient values from the totals in daily_nutrition_logs
+    const updateLogTotalsSql = `
+      UPDATE daily_nutrition_logs
+      SET
+        protein = protein - ?,
+        glucides = glucides - ?, 
+        lipids = lipids - ?,
+        calories = calories - ?,
+        fiber = fiber - ?
+      WHERE id = ?;
+    `;
+    // Note: 'carbs' from logged_food_items corresponds to 'glucides' in daily_nutrition_logs
+    await new Promise((resolve, reject) => {
+      db.run(updateLogTotalsSql, [item.protein, item.carbs, item.lipids, item.calories, item.fiber, item.logId], function(err) {
+        if (err) {
+          console.error('Error updating daily nutrition log totals:', err.message);
+          return reject(err);
+        }
+        resolve();
+      });
+    });
+
+    // Step 4 & 5: Check if the daily_nutrition_logs entry needs to be deleted
+    const checkRemainingItemsSql = 'SELECT COUNT(*) AS count FROM logged_food_items WHERE log_id = ?';
+    const remainingItems = await new Promise((resolve, reject) => {
+      db.get(checkRemainingItemsSql, [item.logId], (err, row) => {
+        if (err) {
+          console.error('Error checking remaining items:', err.message);
+          return reject(err);
+        }
+        resolve(row);
+      });
+    });
+
+    if (remainingItems.count === 0) {
+      const getUpdatedLogTotalsSql = 'SELECT protein, glucides, lipids, calories, fiber FROM daily_nutrition_logs WHERE id = ?';
+      const updatedLogTotals = await new Promise((resolve, reject) => {
+        db.get(getUpdatedLogTotalsSql, [item.logId], (err, row) => {
+          if (err) {
+            console.error('Error fetching updated log totals:', err.message);
+            return reject(err);
+          }
+          resolve(row);
+        });
+      });
+
+      if (updatedLogTotals &&
+          (updatedLogTotals.protein <= 0) &&
+          (updatedLogTotals.glucides <= 0) &&
+          (updatedLogTotals.lipids <= 0) &&
+          (updatedLogTotals.calories <= 0) &&
+          (updatedLogTotals.fiber <= 0)) {
+        
+        const deleteDailyLogSql = 'DELETE FROM daily_nutrition_logs WHERE id = ?';
+        await new Promise((resolve, reject) => {
+          db.run(deleteDailyLogSql, [item.logId], function(err) {
+            if (err) {
+              console.error('Error deleting daily nutrition log:', err.message);
+              // Non-critical for the overall success of item deletion, but should be logged
+              return reject(err); // Or resolve and log, depending on desired behavior
+            }
+            console.log(`Daily nutrition log ${item.logId} deleted as it became empty.`);
+            resolve();
+          });
+        });
+      }
+    }
+
+    res.status(200).json({ message: 'Food item deleted successfully.' });
+
+  } catch (error) {
+    // Log the error for server-side debugging
+    // error.message might already be logged by specific steps, but this catches general errors
+    console.error('Failed to delete food item or update logs:', error.message, error.stack);
+    // Send a generic error response to the client
+    if (!res.headersSent) { // Avoid sending response if one has already been sent (e.g., 403, 404)
+        res.status(500).json({ error: 'Failed to delete food item. Please try again later.' });
+    }
   }
 });
 
