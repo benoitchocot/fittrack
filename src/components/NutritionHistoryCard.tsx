@@ -138,7 +138,6 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Glucides (g)</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lipides (g)</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fibres (g)</th>
-                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -154,25 +153,6 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.carbs.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.lipids.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.fiber.toFixed(1)}</td>
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => {
-                                console.log('[NutritionHistoryCard] Delete button clicked. Item:', item, 'ItemID:', item.itemId);
-                                if (item.itemId === null || item.itemId === undefined || typeof item.itemId !== 'number') {
-                                  console.error('[NutritionHistoryCard] Invalid itemId for delete operation. Item:', item);
-                                  toast.error("Impossible de supprimer cet élément : ID manquant ou invalide."); // User-facing toast
-                                  return;
-                                }
-                                setItemToDelete(item.itemId);
-                                setIsAlertDialogOpen(true);
-                              }}
-                              disabled={item.itemId === null || item.itemId === undefined || typeof item.itemId !== 'number'}
-                            >
-                              Supprimer
-                            </Button>
-                          </td>
                           </tr>
                         );
                       })}
@@ -182,48 +162,7 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
               ) : (
                 <p className="text-sm text-muted-foreground mt-2">Aucun détail d'aliment disponible pour ce jour.</p>
               )}
-              <AlertDialog open={isAlertDialogOpen} onOpenChange={setIsAlertDialogOpen}>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet aliment ?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Cette action ne peut pas être annulée. Cela supprimera l'aliment de cet enregistrement journalier.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => { setItemToDelete(null); setIsAlertDialogOpen(false); }}>Annuler</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={async () => {
-                        if (itemToDelete === null) return;
-
-                        console.log('Attempting to delete item with ID:', itemToDelete); // Added for debugging
-                        try {
-                          const response = await apiFetch(`/api/nutrition/log/item/${itemToDelete}`, {
-                            method: 'DELETE',
-                          });
-
-                          if (response.ok) {
-                            toast.success('Aliment supprimé de l\'historique avec succès.');
-                            await onItemDeleted(logEntry.id, itemToDelete);
-                          } else {
-                            const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
-                            console.error('Failed to delete item:', errorData);
-                            toast.error(`Erreur lors de la suppression de l'aliment: ${errorData.error || errorData.message}`);
-                          }
-                        } catch (error) {
-                          console.error('Error deleting item:', error);
-                          toast.error('Une erreur réseau est survenue lors de la tentative de suppression.');
-                        } finally {
-                          setIsAlertDialogOpen(false);
-                          setItemToDelete(null);
-                        }
-                      }}
-                    >
-                      Supprimer
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+             
               {logEntry.items && logEntry.items.length > 0 && (
                 <div className="mt-4 text-right">
                   {/* <button
