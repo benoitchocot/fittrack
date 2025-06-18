@@ -29,10 +29,10 @@ app.use(cors({
 // Si tu utilises des requêtes avec Content-Type: application/json
 app.use(bodyParser.json());
 
-app.use("/templates", templatesRoutes);
-app.use("/history", historyRoutes);
-app.use("/auth", authRoutes);
-app.use("/nutrition", nutritionRoutes);
+app.use("/api/templates", templatesRoutes);
+app.use("/api/history", historyRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/nutrition", nutritionRoutes);
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
 });
