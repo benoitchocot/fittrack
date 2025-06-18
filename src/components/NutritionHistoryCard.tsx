@@ -54,6 +54,8 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
 
+  console.log('[NutritionHistoryCard] Rendering with logEntry items:', logEntry.items); // Added console log
+
   if (!logEntry) {
     return (
       <Card className="mb-4 border-red-500">
@@ -140,10 +142,13 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {logEntry.items.map((item) => ( // Index no longer needed for key or onClick
-                        <tr key={item.id}>
-                          <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.name}</td>
-                          <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.weight.toFixed(0)}</td>
+                      {logEntry.items.map((item) => { // Index no longer needed for key or onClick
+                        console.log('[NutritionHistoryCard] Mapping item in table:', item); // Added console log
+                        console.log('[NutritionHistoryCard] Item ID for delete button:', item.id); // Added console log
+                        return (
+                          <tr key={item.id}>
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.name}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.weight.toFixed(0)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.calories.toFixed(0)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.protein.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.carbs.toFixed(1)}</td>
@@ -161,8 +166,9 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                               Supprimer
                             </Button>
                           </td>
-                        </tr>
-                      ))}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -183,6 +189,7 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                       onClick={async () => {
                         if (itemToDelete === null) return;
 
+                        console.log('Attempting to delete item with ID:', itemToDelete); // Added for debugging
                         try {
                           const response = await apiFetch(`/api/nutrition/log/item/${itemToDelete}`, {
                             method: 'DELETE',
