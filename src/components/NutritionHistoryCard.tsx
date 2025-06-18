@@ -58,7 +58,7 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
 
   const handleDeleteItem = async (itemId: number) => {
     try {
-      const response = await apiFetch(`/api/nutrition/log/item/${itemId}`, {
+      const response = await apiFetch(`/nutrition/log/item/${itemId}`, {
         method: 'DELETE',
       });
 
