@@ -159,7 +159,7 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                               variant="destructive"
                               size="sm"
                               onClick={() => {
-                                setItemToDelete(item.id);
+                                setItemToDelete(item.itemId);
                                 setIsAlertDialogOpen(true);
                               }}
                             >
