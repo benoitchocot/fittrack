@@ -56,6 +56,25 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
 
   console.log('[NutritionHistoryCard] Rendering with logEntry items:', logEntry.items); // Added console log
 
+  const handleDeleteItem = async (itemId: number) => {
+    try {
+      const response = await apiFetch(`/api/nutrition/log/item/${itemId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Aliment supprimé avec succès !');
+        onItemDeleted(logEntry.id, itemId);
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
+        toast.error(`Échec de la suppression : ${errorData.message || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'aliment:', error);
+      toast.error('Erreur lors de la tentative de suppression.');
+    }
+  };
+
   if (!logEntry) {
     return (
       <Card className="mb-4 border-red-500">
@@ -138,6 +157,7 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Glucides (g)</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lipides (g)</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fibres (g)</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -153,6 +173,25 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.carbs.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.lipids.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.fiber.toFixed(1)}</td>
+                            <td className="px-3 py-2 whitespace-nowrap text-gray-900">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="sm">Supprimer</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirmation de suppression</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Êtes-vous sûr de vouloir supprimer cet aliment de l'historique ? Cette action est irréversible.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteItem(item.itemId)}>Supprimer</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </td>
                           </tr>
                         );
                       })}
