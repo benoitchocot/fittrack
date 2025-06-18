@@ -159,9 +159,16 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                               variant="destructive"
                               size="sm"
                               onClick={() => {
+                                console.log('[NutritionHistoryCard] Delete button clicked. Item:', item, 'ItemID:', item.itemId);
+                                if (item.itemId === null || item.itemId === undefined || typeof item.itemId !== 'number') {
+                                  console.error('[NutritionHistoryCard] Invalid itemId for delete operation. Item:', item);
+                                  toast.error("Impossible de supprimer cet élément : ID manquant ou invalide."); // User-facing toast
+                                  return;
+                                }
                                 setItemToDelete(item.itemId);
                                 setIsAlertDialogOpen(true);
                               }}
+                              disabled={item.itemId === null || item.itemId === undefined || typeof item.itemId !== 'number'}
                             >
                               Supprimer
                             </Button>
