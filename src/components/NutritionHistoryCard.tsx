@@ -22,7 +22,7 @@ import {
 
 // New interface for individual food items logged historically
 export interface HistoricFoodItem {
-  id: number; // Now guaranteed from backend as itemId
+  itemId: number; // Now guaranteed from backend as itemId
   name: string;
   weight: number;
   protein: number;
@@ -144,9 +144,9 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                     <tbody className="bg-white divide-y divide-gray-200">
                       {logEntry.items.map((item) => { // Index no longer needed for key or onClick
                         console.log('[NutritionHistoryCard] Mapping item in table:', item); // Added console log
-                        console.log('[NutritionHistoryCard] Item ID for delete button:', item.id); // Added console log
+                        console.log('[NutritionHistoryCard] Item ID for delete button:', item.itemId); // Added console log
                         return (
-                          <tr key={item.id}>
+                          <tr key={item.itemId}>
                             <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.name}</td>
                             <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.weight.toFixed(0)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.calories.toFixed(0)}</td>
