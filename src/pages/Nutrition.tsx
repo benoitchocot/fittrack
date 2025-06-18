@@ -257,6 +257,31 @@ const NutritionPage: React.FC = () => {
     toast.success(`Journal rechargé avec les aliments du ${formattedDate}.`);
   };
 
+  const handleItemDeletedFromHistory = async (logId: number, deletedItemId: number) => {
+    console.log(`Attempting to refresh history after item ${deletedItemId} from log ${logId} was deleted.`);
+    setHistoryLoading(true);
+    try {
+      const response = await apiFetch('nutrition/log');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      const jsonData = await response.json();
+      setNutritionHistory(jsonData as NutritionLogEntry[]);
+      toast.info('Historique mis à jour.'); // Or a more subtle notification if preferred
+    } catch (error) {
+      console.error('Error fetching or parsing nutrition history after deletion:', error);
+      let errorMessage = 'Failed to refresh nutrition history.';
+      if (error instanceof Error && error.message) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+      setNutritionHistory([]); // Optionally clear or leave stale data
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   return (
     <div>
       <NavBar />
@@ -394,10 +419,12 @@ const NutritionPage: React.FC = () => {
             ) : (
               <div className="space-y-4 p-4">
                 {nutritionHistory.map((logEntry) => (
-                  <NutritionHistoryCard 
-                    key={logEntry.id} 
-                    logEntry={logEntry} 
-                    onReloadLog={() => handleReloadLog(logEntry.items, logEntry.date)} />
+                  <NutritionHistoryCard
+                    key={logEntry.id}
+                    logEntry={logEntry}
+                    onReloadLog={() => handleReloadLog(logEntry.items, logEntry.date)}
+                    onItemDeleted={handleItemDeletedFromHistory} // Pass the new handler
+                  />
                 ))}
               </div>
             )}
