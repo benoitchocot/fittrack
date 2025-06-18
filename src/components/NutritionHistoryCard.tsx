@@ -1,13 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { apiFetch } from "@/utils/api"; // Import apiFetch
+import { toast } from "sonner"; // Import toast
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge"; // For displaying the date
+import { Button } from "@/components/ui/button"; // Import Button
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"; // Import AlertDialog components
 
 // Define the structure of a nutrition log entry prop
 // This should match the structure returned by the GET /nutrition/log endpoint
 
 // New interface for individual food items logged historically
 export interface HistoricFoodItem {
+  id: number; // Now guaranteed from backend as itemId
   name: string;
   weight: number;
   protein: number;
@@ -32,9 +47,13 @@ export interface NutritionLogEntry {
 interface NutritionHistoryCardProps {
   logEntry: NutritionLogEntry;
   onReloadLog: (itemsToReload: HistoricFoodItem[]) => void;
+  onItemDeleted: (logId: number, itemId: number) => Promise<void>; // New prop for handling item deletion
 }
 
-const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, onReloadLog }) => {
+const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, onReloadLog, onItemDeleted }) => {
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+  const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
+
   if (!logEntry) {
     return (
       <Card className="mb-4 border-red-500">
@@ -117,11 +136,12 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Glucides (g)</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lipides (g)</th>
                         <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fibres (g)</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {logEntry.items.map((item, index) => (
-                        <tr key={index}>
+                      {logEntry.items.map((item) => ( // Index no longer needed for key or onClick
+                        <tr key={item.id}>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.name}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.weight.toFixed(0)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.calories.toFixed(0)}</td>
@@ -129,6 +149,18 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.carbs.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.lipids.toFixed(1)}</td>
                           <td className="px-3 py-2 whitespace-nowrap text-gray-900">{item.fiber.toFixed(1)}</td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                setItemToDelete(item.id);
+                                setIsAlertDialogOpen(true);
+                              }}
+                            >
+                              Supprimer
+                            </Button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -137,6 +169,47 @@ const NutritionHistoryCard: React.FC<NutritionHistoryCardProps> = ({ logEntry, o
               ) : (
                 <p className="text-sm text-muted-foreground mt-2">Aucun détail d'aliment disponible pour ce jour.</p>
               )}
+              <AlertDialog open={isAlertDialogOpen} onOpenChange={setIsAlertDialogOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet aliment ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Cette action ne peut pas être annulée. Cela supprimera l'aliment de cet enregistrement journalier.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => { setItemToDelete(null); setIsAlertDialogOpen(false); }}>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={async () => {
+                        if (itemToDelete === null) return;
+
+                        try {
+                          const response = await apiFetch(`/api/nutrition/log/item/${itemToDelete}`, {
+                            method: 'DELETE',
+                          });
+
+                          if (response.ok) {
+                            toast.success('Aliment supprimé de l\'historique avec succès.');
+                            await onItemDeleted(logEntry.id, itemToDelete);
+                          } else {
+                            const errorData = await response.json().catch(() => ({ message: 'Erreur inconnue' }));
+                            console.error('Failed to delete item:', errorData);
+                            toast.error(`Erreur lors de la suppression de l'aliment: ${errorData.error || errorData.message}`);
+                          }
+                        } catch (error) {
+                          console.error('Error deleting item:', error);
+                          toast.error('Une erreur réseau est survenue lors de la tentative de suppression.');
+                        } finally {
+                          setIsAlertDialogOpen(false);
+                          setItemToDelete(null);
+                        }
+                      }}
+                    >
+                      Supprimer
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               {logEntry.items && logEntry.items.length > 0 && (
                 <div className="mt-4 text-right">
                   {/* <button
