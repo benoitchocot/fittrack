@@ -14,6 +14,7 @@ import Register from "./pages/auth/Register";
 import NotFound from "./pages/NotFound";
 import WorkoutHistoryDetail from "./pages/WorkoutHistoryDetail";
 import NutritionPage from "./pages/Nutrition";
+import AddToHomeScreenPrompt from "@/components/AddToHomeScreenPrompt"; // Import the new component
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
           />
         </Routes>
       </BrowserRouter>
+      <AddToHomeScreenPrompt /> {/* Add the component here */}
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
