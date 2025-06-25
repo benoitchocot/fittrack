@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,9 +32,48 @@ const ExerciseForm = ({
   lastPerformanceData,
 }: ExerciseFormProps) => {
   const [showComment, setShowComment] = useState(!!exercise.comment);
+  const [exerciseNameInput, setExerciseNameInput] = useState(exercise.name);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [allExercises, setAllExercises] = useState<string[]>([]);
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate({ ...exercise, name: e.target.value });
+  useEffect(() => {
+    fetch("/exercices.json")
+      .then((response) => response.json())
+      .then((data: { name: string }[]) => {
+        setAllExercises(data.map(item => item.name));
+      })
+      .catch((error) => {
+        console.error("Error fetching exercises.json:", error);
+        // Handle error appropriately, maybe a toast message
+      });
+  }, []);
+
+  useEffect(() => {
+    // Update internal state if exercise prop changes from parent
+    setExerciseNameInput(exercise.name);
+  }, [exercise.name]);
+
+
+  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setExerciseNameInput(value);
+    onUpdate({ ...exercise, name: value }); // Update parent immediately or on blur/selection
+
+    if (value.length > 1) { // Start suggesting after 2 characters
+      const normalizedQuery = value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const filtered = allExercises.filter(exName => 
+        exName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(normalizedQuery)
+      );
+      setSuggestions(filtered.slice(0, 10)); // Show top 10 suggestions
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSuggestionClick = (suggestionName: string) => {
+    setExerciseNameInput(suggestionName);
+    onUpdate({ ...exercise, name: suggestionName });
+    setSuggestions([]);
   };
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -66,13 +105,27 @@ const ExerciseForm = ({
     <Card className="mb-6">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <div className="flex-1 mr-2">
+           <div className="flex-1 mr-2 relative"> {/* Added relative positioning here */}
             <Input
               placeholder="Nom de l'exercice"
-              value={exercise.name}
+              value={exerciseNameInput}
               onChange={handleNameChange}
+              onBlur={() => setTimeout(() => setSuggestions([]), 100)} // Hide suggestions on blur with a small delay
               className="font-medium"
             />
+            {suggestions.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
+                {suggestions.map((name, index) => (
+                  <li
+                    key={index}
+                    onClick={() => handleSuggestionClick(name)}
+                    className="p-2 hover:bg-gray-100 cursor-pointer"
+                  >
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div className="flex items-center ml-2">
             <Button
