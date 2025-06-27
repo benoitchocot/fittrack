@@ -1,5 +1,4 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import NavBar from '@/components/NavBar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button'; // Standard Button, used for Add, Save, Delete
 import { Textarea } from "@/components/ui/textarea"; // Import Textarea
@@ -284,7 +283,6 @@ const NutritionPage: React.FC = () => {
 
   return (
     <div>
-      <NavBar />
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Nutrition Tracker</h1>
 

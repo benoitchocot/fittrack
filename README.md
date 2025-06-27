@@ -33,7 +33,7 @@ npm install
 npm run dev
 ```
 
-> Remarque : Vous devrez peut-être modifier les variables d’environnement dans le frontend pour pointer vers votre backend local (localhost:9998).
+> Remarque : Vous devrez peut-être modifier les variables d’environnement dans le frontend pour pointer vers votre backend local (localhost:3001).
 
 ---
 

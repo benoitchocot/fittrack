@@ -12,7 +12,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WorkoutCard from "@/components/WorkoutCard";
 import WorkoutHistoryCard from "@/components/WorkoutHistoryCard";
-import NavBar from "@/components/NavBar";
 import { Plus } from "lucide-react";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
 import {
@@ -119,7 +118,6 @@ const Index = () => {
   if (authLoading || loadingTemplates || loadingHistory) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
-        <NavBar />
         <div className="container px-4 py-6 text-center">
           <p>Chargement des données...</p>
         </div>
@@ -194,7 +192,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
-      <NavBar />
 
       <div className="container px-4 py-6">
         {pausedWorkout && (

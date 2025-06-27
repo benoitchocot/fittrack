@@ -23,14 +23,25 @@ const NavBar = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <NavLink href="/" current={location.pathname === '/'} >
-            Home
+          {token && ( // Only show Home and Nutrition if logged in
+            <>
+              <NavLink href="/" current={location.pathname === '/'}>
+                Home
+              </NavLink>
+              <NavLink href="/nutrition" current={location.pathname === '/nutrition'}>
+                Nutrition
+              </NavLink>
+            </>
+          )}
+          {/* Contact and Terms are always visible */}
+          <NavLink href="/contact" current={location.pathname === '/contact'}>
+            Contact
           </NavLink>
-          <NavLink href="/nutrition" current={location.pathname === '/nutrition'}>
-            Nutrition
+          <NavLink href="/terms" current={location.pathname === '/terms'}>
+            CGU
           </NavLink>
 
-          {/* Bouton user ou logout selon présence token */}
+          {/* Login/Logout Button */}
           {token ? (
             <Button
               variant="ghost"
