@@ -78,9 +78,19 @@ db.run(`
       template_id INTEGER,
       exercise_name TEXT,
       notes TEXT,
-      order_num INTEGER
+      order_num INTEGER,
+      exerciseType TEXT DEFAULT 'reps' 
     )
   `);
+  
+  // Add exerciseType to template_named_exercises if it doesn't exist
+  db.run("ALTER TABLE template_named_exercises ADD COLUMN exerciseType TEXT DEFAULT 'reps'", (err) => {
+    if (err && !err.message.includes("duplicate column name")) {
+      console.error("Error adding 'exerciseType' column to 'template_named_exercises' table:", err.message);
+    } else if (!err) {
+      console.log("Column 'exerciseType' added to 'template_named_exercises' table or already existed.");
+    }
+  });
 
   // exercise_sets
   db.run(`
@@ -90,20 +100,10 @@ db.run(`
       set_order INTEGER,
       kg INTEGER NULL,
       reps INTEGER NULL,
-      completed BOOLEAN DEFAULT 0,
-      setType TEXT DEFAULT 'reps', 
-      duration INTEGER NULL
+      duration INTEGER NULL,
+      completed BOOLEAN DEFAULT 0 
     )
   `);
-  
-  // Add setType to exercise_sets if it doesn't exist
-  db.run("ALTER TABLE exercise_sets ADD COLUMN setType TEXT DEFAULT 'reps'", (err) => {
-    if (err && !err.message.includes("duplicate column name")) {
-      console.error("Error adding 'setType' column to 'exercise_sets' table:", err.message);
-    } else if (!err) {
-      console.log("Column 'setType' added to 'exercise_sets' table or already existed.");
-    }
-  });
 
   // Add duration to exercise_sets if it doesn't exist
   db.run("ALTER TABLE exercise_sets ADD COLUMN duration INTEGER NULL", (err) => {

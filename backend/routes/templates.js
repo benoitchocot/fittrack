@@ -62,17 +62,18 @@ router.post("/", authMiddleware, async (req, res) => {
           `[POST /templates] Inserting exercise: ${exercise.exercise_name} for template ID: ${newTemplateId}`
         );
         const namedExerciseResult = await runExec(
-          "INSERT INTO template_named_exercises (template_id, exercise_name, notes, order_num) VALUES (?, ?, ?, ?)",
+          "INSERT INTO template_named_exercises (template_id, exercise_name, notes, order_num, exerciseType) VALUES (?, ?, ?, ?, ?)",
           [
             newTemplateId,
             exercise.exercise_name,
             exercise.notes || null,
             exercise.order_num || null,
+            exercise.exerciseType || 'reps', // Save exerciseType
           ]
         );
         const newNamedExerciseId = namedExerciseResult.lastID;
         console.log(
-          `[POST /templates] Inserted named exercise ID: ${newNamedExerciseId}`
+          `[POST /templates] Inserted named exercise ID: ${newNamedExerciseId}, type: ${exercise.exerciseType || 'reps'}`
         );
 
         let savedSets = [];
@@ -86,27 +87,24 @@ router.post("/", authMiddleware, async (req, res) => {
               `[POST /templates] Inserting set for named exercise ID ${newNamedExerciseId}:`,
               set
             );
-            const setResult = await runExec(
-              "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed, setType, duration) VALUES (?, ?, ?, ?, ?, ?, ?)",
-              [
+            const sql = "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, duration, completed) VALUES (?, ?, ?, ?, ?, ?)";
+            const params = [
                 newNamedExerciseId,
                 set.set_order || null,
-                set.kg || null, 
-                set.setType === 'timer' ? null : (set.reps || null),
+                set.kg || null,
+                (exercise.exerciseType || 'reps') === 'reps' ? (set.reps || null) : null,
+                (exercise.exerciseType || 'reps') === 'timer' ? (set.duration || null) : null,
                 completedStatus,
-                set.setType || 'reps',
-                set.setType === 'reps' ? null : (set.duration || null)
-              ]
-            );
+            ];
+            const setResult = await runExec(sql, params);
             savedSets.push({
               id: setResult.lastID,
               template_named_exercise_id: newNamedExerciseId, 
               set_order: set.set_order || null,
               kg: set.kg || null,
-              reps: set.setType === 'timer' ? null : (set.reps || null),
+              reps: (exercise.exerciseType || 'reps') === 'reps' ? (set.reps || null) : null,
+              duration: (exercise.exerciseType || 'reps') === 'timer' ? (set.duration || null) : null,
               completed: completedStatus,
-              setType: set.setType || 'reps',
-              duration: set.setType === 'reps' ? null : (set.duration || null),
             });
           }
         }
@@ -114,6 +112,7 @@ router.post("/", authMiddleware, async (req, res) => {
           id: newNamedExerciseId,
           template_id: newTemplateId, 
           exercise_name: exercise.exercise_name,
+          exerciseType: exercise.exerciseType || 'reps',
           notes: exercise.notes || null,
           order_num: exercise.order_num || null,
           sets: savedSets,
@@ -170,21 +169,24 @@ router.get("/", authMiddleware, async (req, res) => {
 
     for (const template of templates) {
       const namedExercises = await runQuery(
-        "SELECT id, template_id, exercise_name, notes, order_num FROM template_named_exercises WHERE template_id = ? ORDER BY order_num",
+        "SELECT id, template_id, exercise_name, notes, order_num, exerciseType FROM template_named_exercises WHERE template_id = ? ORDER BY order_num",
         [template.id]
       );
 
       for (const namedExercise of namedExercises) {
+        // Ensure exerciseType has a default if null/undefined from DB (though DB has default)
+        const currentExerciseType = namedExercise.exerciseType || 'reps';
+        namedExercise.exerciseType = currentExerciseType;
+
         const sets = await runQuery(
-          "SELECT id, template_named_exercise_id, set_order, kg, reps, completed, setType, duration FROM exercise_sets WHERE template_named_exercise_id = ? ORDER BY set_order",
+          "SELECT id, template_named_exercise_id, set_order, kg, reps, duration, completed FROM exercise_sets WHERE template_named_exercise_id = ? ORDER BY set_order",
           [namedExercise.id]
         );
         namedExercise.sets = sets.map((s) => ({
           ...s,
+          reps: currentExerciseType === 'reps' ? s.reps : null,
+          duration: currentExerciseType === 'timer' ? s.duration : null,
           completed: !!s.completed,
-          setType: s.setType || 'reps', 
-          duration: s.duration, 
-          reps: s.reps, 
         }));
       }
       template.exercises = namedExercises;
@@ -224,21 +226,23 @@ router.get("/:id", authMiddleware, async (req, res) => {
     const singleTemplate = templates[0];
 
     const namedExercises = await runQuery(
-      "SELECT id, template_id, exercise_name, notes, order_num FROM template_named_exercises WHERE template_id = ? ORDER BY order_num",
+      "SELECT id, template_id, exercise_name, notes, order_num, exerciseType FROM template_named_exercises WHERE template_id = ? ORDER BY order_num",
       [singleTemplate.id]
     );
 
     for (const namedExercise of namedExercises) {
+      const currentExerciseType = namedExercise.exerciseType || 'reps';
+      namedExercise.exerciseType = currentExerciseType;
+
       const sets = await runQuery(
-        "SELECT id, template_named_exercise_id, set_order, kg, reps, completed, setType, duration FROM exercise_sets WHERE template_named_exercise_id = ? ORDER BY set_order",
+        "SELECT id, template_named_exercise_id, set_order, kg, reps, duration, completed FROM exercise_sets WHERE template_named_exercise_id = ? ORDER BY set_order",
         [namedExercise.id]
       );
       namedExercise.sets = sets.map((s) => ({
         ...s,
+        reps: currentExerciseType === 'reps' ? s.reps : null,
+        duration: currentExerciseType === 'timer' ? s.duration : null,
         completed: !!s.completed,
-        setType: s.setType || 'reps',
-        duration: s.duration,
-        reps: s.reps,
       }));
     }
     singleTemplate.exercises = namedExercises;
@@ -326,17 +330,18 @@ router.put("/:id", authMiddleware, async (req, res) => {
         `[PUT /templates/${templateId}] Processing exercise: ${exercise.exercise_name}`
       );
       const namedExerciseResult = await runExec(
-        "INSERT INTO template_named_exercises (template_id, exercise_name, notes, order_num) VALUES (?, ?, ?, ?)",
+        "INSERT INTO template_named_exercises (template_id, exercise_name, notes, order_num, exerciseType) VALUES (?, ?, ?, ?, ?)",
         [
           templateId,
           exercise.exercise_name,
           exercise.notes || null,
           exercise.order_num || null,
+          exercise.exerciseType || 'reps', // Save exerciseType
         ]
       );
       const newNamedExerciseId = namedExerciseResult.lastID;
       console.log(
-        `[PUT /templates/${templateId}] Inserted named exercise ID: ${newNamedExerciseId}`
+        `[PUT /templates/${templateId}] Inserted named exercise ID: ${newNamedExerciseId}, type: ${exercise.exerciseType || 'reps'}`
       );
 
       let processedSets = [];
@@ -351,27 +356,24 @@ router.put("/:id", authMiddleware, async (req, res) => {
             `[PUT /templates/${templateId}] Inserting set for named exercise ID ${newNamedExerciseId}:`,
             set
           );
-          const setResult = await runExec(
-            "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed, setType, duration) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [
-              newNamedExerciseId, 
+          const sql = "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, duration, completed) VALUES (?, ?, ?, ?, ?, ?)";
+          const params = [
+              newNamedExerciseId,
               set.set_order || null,
               set.kg || null,
-              set.setType === 'timer' ? null : (set.reps || null),
+              (exercise.exerciseType || 'reps') === 'reps' ? (set.reps || null) : null,
+              (exercise.exerciseType || 'reps') === 'timer' ? (set.duration || null) : null,
               completedStatus,
-              set.setType || 'reps',
-              set.setType === 'reps' ? null : (set.duration || null)
-            ]
-          );
+          ];
+          const setResult = await runExec(sql, params);
           processedSets.push({
             id: setResult.lastID,
             template_named_exercise_id: newNamedExerciseId,
             set_order: set.set_order || null,
             kg: set.kg || null,
-            reps: set.setType === 'timer' ? null : (set.reps || null),
+            reps: (exercise.exerciseType || 'reps') === 'reps' ? (set.reps || null) : null,
+            duration: (exercise.exerciseType || 'reps') === 'timer' ? (set.duration || null) : null,
             completed: completedStatus,
-            setType: set.setType || 'reps',
-            duration: set.setType === 'reps' ? null : (set.duration || null),
           });
         }
       }
@@ -379,6 +381,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
         id: newNamedExerciseId,
         template_id: parseInt(templateId, 10),
         exercise_name: exercise.exercise_name,
+        exerciseType: exercise.exerciseType || 'reps',
         notes: exercise.notes || null,
         order_num: exercise.order_num || null,
         sets: processedSets,
