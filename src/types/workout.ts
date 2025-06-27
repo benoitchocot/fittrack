@@ -2,15 +2,15 @@
 export interface Set {
   id: string;
   weight: number | null;
-  reps: number | null;
-  duration: number | null; // Duration in seconds
-  setType: 'reps' | 'timer';
+  reps: number | null; // Used if parent Exercise.exerciseType is 'reps'
+  duration: number | null; // Used if parent Exercise.exerciseType is 'timer', in seconds
   completed: boolean;
 }
 
 export interface Exercise {
   id: string;
   name: string;
+  exerciseType: 'reps' | 'timer'; // Type for all sets within this exercise
   sets: Set[];
   comment?: string;
   order_num: number;

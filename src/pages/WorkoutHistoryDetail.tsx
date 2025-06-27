@@ -104,9 +104,10 @@ const WorkoutHistoryDetail = () => {
   };
 
   // Helper function to format seconds into mm:ss or hh:mm:ss for display
-  const formatSecondsForDisplay = (totalSeconds: number | null | undefined): string => {
-    if (totalSeconds == null) return "-";
+  const formatSetDuration = (totalSeconds: number | null | undefined): string => {
+    if (totalSeconds == null || totalSeconds < 0) return "-"; // Handle null, undefined, or negative
     if (totalSeconds === 0) return "0s";
+    
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
@@ -114,11 +115,12 @@ const WorkoutHistoryDetail = () => {
     let parts = [];
     if (hours > 0) parts.push(`${hours}h`);
     if (minutes > 0) parts.push(`${minutes}m`);
-    if (seconds > 0 || (hours === 0 && minutes === 0)) parts.push(`${seconds}s`); // Show 0s if everything else is 0
+    // Show seconds if it's the only unit, or if other units are present and seconds are non-zero.
+    // Also show "0s" if totalSeconds was 0 initially but other logic makes it here.
+    if (seconds > 0 || (hours === 0 && minutes === 0)) parts.push(`${seconds}s`); 
   
-    return parts.length > 0 ? parts.join(' ') : "0s";
+    return parts.length > 0 ? parts.join(' ') : "0s"; // Default to "0s" if somehow parts is empty
   };
-
 
   return (
     <>
@@ -149,42 +151,42 @@ const WorkoutHistoryDetail = () => {
 
         <h2 className="text-2xl font-semibold mb-4">Exercices</h2>
         <div className="space-y-6">
-          {exercises?.map((exercise, index) => (
-            <div key={exercise.id || index} className="p-4 bg-white rounded-lg shadow dark:bg-zinc-800">
-              <h3 className="text-xl font-semibold mb-2">{exercise.name}</h3>
-              {exercise.comment && ( 
-                <p className="mb-3 text-sm">
-                  <span className="font-medium text-gray-700 dark:text-gray-300">Commentaire:</span>{' '}
-                  <span className="text-gray-600 dark:text-gray-400 italic">{exercise.comment}</span>
-                </p>
-              )}
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2 mb-1 text-xs font-medium text-muted-foreground px-2">
-                  <span>Série</span>
-                  <span>Performance</span>
-                  <span className="text-right">Statut</span>
-                </div>
-                {exercise.sets.map((set, setIndex) => {
-                  // Ensure setType has a default for older data that might not have it
-                  const currentSetType = set.setType || 'reps';
-                  return (
+          {exercises?.map((exercise, index) => {
+            // Default to 'reps' if exerciseType is not present (for older data compatibility)
+            const currentExerciseType = exercise.exerciseType || 'reps';
+            return (
+              <div key={exercise.id || index} className="p-4 bg-white rounded-lg shadow dark:bg-zinc-800">
+                <h3 className="text-xl font-semibold mb-2">{exercise.name}</h3>
+                {exercise.comment && ( 
+                  <p className="mb-3 text-sm">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Commentaire:</span>{' '}
+                    <span className="text-gray-600 dark:text-gray-400 italic">{exercise.comment}</span>
+                  </p>
+                )}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2 mb-1 text-xs font-medium text-muted-foreground px-2">
+                    <span>Série</span>
+                    <span>Performance</span>
+                    <span className="text-right">Statut</span>
+                  </div>
+                  {exercise.sets.map((set, setIndex) => (
                     <div key={set.id || setIndex} className="flex justify-between items-center p-2 rounded bg-gray-50 dark:bg-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-600 transition-colors">
                       <span className="text-sm font-medium w-1/3">Série {setIndex + 1}</span>
                       <span className="text-sm w-1/3 text-center">
-                        {(set.weight || set.kg) ? `${set.weight ?? set.kg} kg x ` : ""}
-                        {currentSetType === 'timer' 
-                          ? `${formatSecondsForDisplay(set.duration)}` 
+                        {(set.weight ?? set.kg) ? `${set.weight ?? set.kg} kg x ` : ""}
+                        {currentExerciseType === 'timer' 
+                          ? `${formatSetDuration(set.duration)}` 
                           : `${set.reps ?? 0} reps`}
                       </span>
                       <span className={`text-sm font-medium w-1/3 text-right ${set.completed ? 'text-green-500' : 'text-red-500'}`}>
                         {set.completed ? 'Terminé' : 'Non terminé'}
                       </span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>

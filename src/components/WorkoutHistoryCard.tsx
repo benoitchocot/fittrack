@@ -32,16 +32,19 @@ const WorkoutHistoryCard = ({ workout }: WorkoutHistoryCardProps) => {
 
   const { name, exercises, startedAt, finishedAt } = workout.workout_details;
 
-  // Calculate total volume (weight * reps for 'reps' type sets)
+  // Calculate total volume (weight * reps for exercises of type 'reps')
   const totalVolume = exercises.reduce((sum, exercise) => {
-    return sum + exercise.sets.reduce((setSum, set) => {
-      // Ensure setType has a default for older data
-      const currentSetType = set.setType || 'reps';
-      if (set.completed && currentSetType === 'reps' && set.weight && set.reps) {
-        return setSum + (set.weight * set.reps);
-      }
-      return setSum;
-    }, 0);
+    // Default to 'reps' for older data that might not have exerciseType
+    const currentExerciseType = exercise.exerciseType || 'reps';
+    if (currentExerciseType === 'reps') {
+      return sum + (exercise.sets || []).reduce((setSum, set) => {
+        if (set.completed && set.weight && set.reps) {
+          return setSum + (set.weight * set.reps);
+        }
+        return setSum;
+      }, 0);
+    }
+    return sum;
   }, 0);
 
   // Calculate duration in minutes
