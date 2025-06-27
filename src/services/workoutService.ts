@@ -10,7 +10,7 @@ const generateExercise = (name = "", order_num = 0): Exercise => ({
   sets: [{ 
     id: generateId(), 
     weight: null, 
-    reps: 0, // Default to 0 for 'reps' type
+    reps: null,
     duration: null, 
     completed: false 
   }],
