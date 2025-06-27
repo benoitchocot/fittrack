@@ -26,14 +26,17 @@ export const startWorkout = (template: any): ActiveWorkout => { // Use 'any' for
     // It's crucial to ensure all properties expected by the Exercise type are here.
     // If the backend provides 'id' for exercises and sets, they must be preserved.
     // The generateId() utility in this file is for NEW entities, not for existing ones from a template.
-    id: ex.id || generateId(), // Preserve backend ID if available, otherwise (less likely for template) generate
-    name: ex.exercise_name || ex.name || '', // Map exercise_name to name, fallback to name, then empty
-    comment: ex.notes || ex.comment,        // Map notes to comment, fallback to comment
+    id: ex.id || generateId(), 
+    name: ex.exercise_name || ex.name || '', 
+    comment: ex.notes || ex.comment,
+    order_num: ex.order_num !== undefined ? ex.order_num : 0, // Ensure order_num is preserved or defaulted
     sets: (ex.sets || []).map((s: any) => ({
-      id: s.id || generateId(), // Preserve backend ID for sets
-      weight: s.kg ?? s.weight ?? null, // Map kg to weight, fallback to weight, then null
-      reps: s.reps ?? null, // Default reps to null if undefined
-      completed: s.completed === undefined ? false : !!s.completed, // Default completed if undefined
+      id: s.id || generateId(), 
+      weight: s.kg ?? s.weight ?? null, 
+      reps: s.setType === 'timer' ? null : (s.reps ?? null),
+      duration: s.setType === 'reps' ? null : (s.duration ?? null),
+      setType: s.setType || 'reps', // Default to 'reps' if not specified from template
+      completed: s.completed === undefined ? false : !!s.completed, 
     })),
   }));
 
@@ -41,15 +44,12 @@ export const startWorkout = (template: any): ActiveWorkout => { // Use 'any' for
   const { exercises, ...restOfTemplate } = template;
 
   return {
-    ...restOfTemplate, // Spread other template properties like id, name (template name), description
-    exercises: transformedExercises, // Use the transformed exercises
+    ...restOfTemplate, 
+    exercises: transformedExercises, 
     startedAt: new Date(),
     isActive: true,
-    // Ensure WorkoutTemplate fields like createdAt, updatedAt are handled if they are part of 'template'
-    // and expected in ActiveWorkout. The types suggest ActiveWorkout extends WorkoutTemplate.
-    // If createdAt/updatedAt are strings, convert them:
-    createdAt: new Date(template.createdAt),
-    updatedAt: new Date(template.updatedAt),
+    createdAt: new Date(template.createdAt), // Ensure these are Date objects
+    updatedAt: new Date(template.updatedAt), // Ensure these are Date objects
   };
 };
 
@@ -80,7 +80,7 @@ export const updateExercise = (
 export const getLastCompletedSetsForExercise = (
   exerciseName: string,
   history: WorkoutHistory[]
-): Array<{ weight: number | null; reps: number | null } | null> | null => {
+): Array<{ weight: number | null; reps: number | null; duration: number | null; setType: 'reps' | 'timer' } | null> | null => {
   if (!history || history.length === 0) {
     return null;
   }
@@ -92,21 +92,28 @@ export const getLastCompletedSetsForExercise = (
       );
 
       if (matchingExercise) {
-        // Found the last performance of this exercise.
-        // Process its sets.
         if (!matchingExercise.sets || matchingExercise.sets.length === 0) {
-          return []; // Exercise found but had no sets, return empty array.
+          return []; 
         }
+        // Ensure historical sets have setType, default to 'reps' if missing from old data
+        const setsWithDefaults = matchingExercise.sets.map(s => ({
+          ...s,
+          setType: s.setType || 'reps',
+          duration: s.duration || null,
+          reps: s.reps || null,
+        }));
 
-        const completedSetsData: Array<{ weight: number | null; reps: number | null } | null> = [];
-        for (const historicalSet of matchingExercise.sets) {
+        const completedSetsData: Array<{ weight: number | null; reps: number | null; duration: number | null; setType: 'reps' | 'timer' } | null> = [];
+        for (const historicalSet of setsWithDefaults) {
           if (historicalSet.completed) {
             completedSetsData.push({
               weight: historicalSet.weight,
-              reps: historicalSet.reps,
+              reps: historicalSet.setType === 'timer' ? null : historicalSet.reps,
+              duration: historicalSet.setType === 'reps' ? null : historicalSet.duration,
+              setType: historicalSet.setType,
             });
           } else {
-            completedSetsData.push(null); // Set was not completed
+            completedSetsData.push(null); 
           }
         }
         return completedSetsData;
@@ -114,7 +121,7 @@ export const getLastCompletedSetsForExercise = (
     }
   }
 
-  return null; // No performance of this exercise name found in history
+  return null; 
 };
 
 export const addExercise = (

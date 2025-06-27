@@ -1,12 +1,43 @@
 
 import React, { useState, useEffect, ChangeEvent } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Exercise, Set } from "@/types/workout";
 import { Trash, Plus, Minus, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Helper functions for time conversion
+const secondsToTimeInput = (totalSeconds: number | null | undefined): string => {
+  if (totalSeconds == null || totalSeconds === 0) return "00:00";
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+const timeInputToSeconds = (timeStr: string): number | null => {
+  if (!timeStr) return null;
+  const parts = timeStr.split(':').map(Number);
+  if (parts.some(isNaN)) return null;
+
+  let totalSeconds = 0;
+  if (parts.length === 3) { // hh:mm:ss
+    totalSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) { // mm:ss
+    totalSeconds = parts[0] * 60 + parts[1];
+  } else {
+    return null; // Invalid format
+  }
+  return totalSeconds;
+};
+
 
 interface ExerciseFormProps {
   exercise: Exercise;
@@ -17,7 +48,7 @@ interface ExerciseFormProps {
   onMoveDown: (id: string) => void;
   exerciseIndex: number;
   totalExercises: number;
-  lastPerformanceData?: Array<{ weight: number | null; reps: number | null } | null> | null;
+  lastPerformanceData?: Array<{ weight: number | null; reps: number | null; duration?: number | null; setType?: 'reps' | 'timer' } | null> | null;
 }
 
 const ExerciseForm = ({
@@ -32,6 +63,23 @@ const ExerciseForm = ({
   lastPerformanceData,
 }: ExerciseFormProps) => {
   const [showComment, setShowComment] = useState(!!exercise.comment);
+
+  // Ensure sets have setType initialized, default to 'reps' if not present (e.g. from older data)
+   useEffect(() => {
+    const setsNeedUpdate = exercise.sets.some(s => s.setType === undefined);
+    if (setsNeedUpdate) {
+      onUpdate({
+        ...exercise,
+        sets: exercise.sets.map(s => ({
+          ...s,
+          setType: s.setType || 'reps',
+          duration: s.duration || null,
+          reps: s.reps || null,
+        })),
+      });
+    }
+  }, [exercise.sets, exercise, onUpdate]);
+
   const [exerciseNameInput, setExerciseNameInput] = useState(exercise.name);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [allExercises, setAllExercises] = useState<string[]>([]);
@@ -85,14 +133,34 @@ const ExerciseForm = ({
       id: Date.now().toString(),
       weight: null,
       reps: null,
+      duration: null,
+      setType: 'reps', // Default to reps
       completed: false,
     };
     onUpdate({ ...exercise, sets: [...exercise.sets, newSet] });
   };
 
-  const updateSet = (index: number, field: keyof Set, value: number | boolean | null) => {
+  const updateSet = (index: number, field: keyof Set, value: any) => {
     const newSets = [...exercise.sets];
-    newSets[index] = { ...newSets[index], [field]: value };
+    let updatedSet = { ...newSets[index], [field]: value };
+
+    // If setType changes, nullify the other value type and set sensible default for current
+    if (field === 'setType') {
+      if (value === 'reps') {
+        updatedSet.duration = null;
+        if(updatedSet.reps === null) updatedSet.reps = 0; // Default to 0 reps
+      } else if (value === 'timer') {
+        updatedSet.reps = null;
+        if(updatedSet.duration === null) updatedSet.duration = 0; // Default to 0 seconds (00:00)
+      }
+    }
+
+    // If value for time input changes, parse it to seconds
+    if (field === 'duration' && typeof value === 'string') {
+       updatedSet.duration = timeInputToSeconds(value);
+    }
+    
+    newSets[index] = updatedSet;
     onUpdate({ ...exercise, sets: newSets });
   };
 
@@ -115,9 +183,9 @@ const ExerciseForm = ({
             />
             {suggestions.length > 0 && (
               <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
-                {suggestions.map((name, index) => (
+                {suggestions.map((name, idx) => (
                   <li
-                    key={index}
+                    key={idx}
                     onClick={() => handleSuggestionClick(name)}
                     className="p-2 hover:bg-gray-100 cursor-pointer"
                   >
@@ -159,56 +227,114 @@ const ExerciseForm = ({
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <div className="grid grid-cols-12 gap-2 mb-2 text-xs font-medium text-muted-foreground">
-            <div className="col-span-1">#</div>
-            <div className="col-span-4 md:col-span-3">KG</div>
-            <div className="col-span-4 md:col-span-3">REPS</div>
+          {/* Header row for larger screens */}
+          <div className="hidden md:grid grid-cols-12 gap-x-2 gap-y-1 mb-2 text-xs font-medium text-muted-foreground items-center">
+            <div className="md:col-span-1">#</div>
+            <div className="md:col-span-3">KG</div>
+            <div className="md:col-span-3">VALEUR</div>
+            <div className="md:col-span-2">TYPE</div>
             {isActive && (
-              <div className="col-span-2 md:col-span-4 text-center">FAIT</div>
+              <div className="md:col-span-2 text-center">FAIT</div>
             )}
-            <div className="col-span-1"></div>
+            <div className="md:col-span-1 text-right">SUPPRIMER</div>
           </div>
           
           {exercise.sets.map((set, index) => (
-            <div key={set.id} className="grid grid-cols-12 gap-2 mb-2 items-center">
-              <div className="col-span-1 text-sm text-muted-foreground">
-                {index + 1}
-              </div>
-              <div className="col-span-4 md:col-span-3">
+            <div 
+              key={set.id} 
+              className="grid grid-cols-6 sm:grid-cols-12 gap-x-2 gap-y-2 mb-3 items-center p-2 border rounded-md md:border-0 md:p-0 md:mb-2"
+            >
+              {/* Set Number - Visible on all, takes less space on mobile */}
+              <div className="col-span-1 sm:col-span-1 text-sm text-muted-foreground self-center">{index + 1}</div>
+
+              {/* KG Input */}
+              <div className="col-span-5 sm:col-span-3 md:col-span-3">
+                <Label htmlFor={`weight-${set.id}`} className="text-xs font-medium md:hidden">KG</Label>
                 <Input
                   type="number"
                   value={set.weight === 0 ? null : set.weight ?? ''}
                   onChange={(e) =>
                     updateSet(index, "weight", e.target.value === '' ? null : parseFloat(e.target.value))
                   }
-                  className="h-9"
+                  className="h-9 w-full"
+                  placeholder="0"
+                  id={`weight-${set.id}`}
                 />
-                {/* Display historical data for THIS set's weight input, if available and completed */}
                 {lastPerformanceData && lastPerformanceData[index] && lastPerformanceData[index]?.weight !== null && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Dernier: {lastPerformanceData[index]?.weight}kg
                   </p>
                 )}
               </div>
-              <div className="col-span-4 md:col-span-3">
-                <Input
-                  type="number"
-                  min="0"
-                  value={set.reps === 0 ? null : set.reps ?? ''}
-                  onChange={(e) =>
-                    updateSet(index, "reps", e.target.value === '' ? null : parseInt(e.target.value, 10))
-                  }
-                  className="h-9"
-                />
-                {/* Display historical data for THIS set's reps input, if available and completed */}
-                {lastPerformanceData && lastPerformanceData[index] && lastPerformanceData[index]?.reps !== null && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Dernier: {lastPerformanceData[index]?.reps} reps
-                  </p>
+
+              {/* Value Input (Reps or Time) */}
+              <div className="col-span-full sm:col-span-4 md:col-span-3">
+                <Label htmlFor={`value-${set.id}`} className="text-xs font-medium md:hidden">
+                  {set.setType === 'reps' ? 'RÉPÉTITIONS' : 'TEMPS'}
+                </Label>
+                {set.setType === 'reps' ? (
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    id={`value-${set.id}`}
+                    value={set.reps ?? ''}
+                    onChange={(e) =>
+                      updateSet(index, "reps", e.target.value === '' ? null : parseInt(e.target.value, 10))
+                    }
+                    className="h-9 w-full"
+                  />
+                ) : (
+                  <Input
+                    type="time"
+                    id={`value-${set.id}`}
+                    value={secondsToTimeInput(set.duration)}
+                    onChange={(e) =>
+                       updateSet(index, "duration", e.target.value) 
+                    }
+                    className="h-9 w-full"
+                    step="1" // Allow seconds input
+                  />
+                )}
+                {lastPerformanceData && lastPerformanceData[index] && (
+                  <>
+                    {set.setType === 'reps' && lastPerformanceData[index]?.reps !== null && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Dernier: {lastPerformanceData[index]?.reps} reps
+                      </p>
+                    )}
+                    {set.setType === 'timer' && lastPerformanceData[index]?.duration !== null && (
+                       <p className="text-xs text-muted-foreground mt-1">
+                        Dernier: {secondsToTimeInput(lastPerformanceData[index]?.duration)}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
+
+              {/* Type Selector (RadioGroup) */}
+              <div className="col-span-full sm:col-span-4 md:col-span-2">
+                 <Label className="text-xs font-medium md:hidden">TYPE</Label>
+                <RadioGroup
+                  value={set.setType || 'reps'}
+                  onValueChange={(value: 'reps' | 'timer') => updateSet(index, "setType", value)}
+                  className="flex space-x-2 mt-1 md:mt-0 items-center h-9"
+                >
+                  <div className="flex items-center space-x-1">
+                    <RadioGroupItem value="reps" id={`reps-${set.id}`} className="h-4 w-4" />
+                    <Label htmlFor={`reps-${set.id}`} className="text-xs font-normal cursor-pointer">REPS</Label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <RadioGroupItem value="timer" id={`timer-${set.id}`} className="h-4 w-4" />
+                    <Label htmlFor={`timer-${set.id}`} className="text-xs font-normal cursor-pointer">TIMER</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* Completed Button */}
               {isActive && (
-                <div className="col-span-2 md:col-span-4 flex justify-center">
+                 <div className="col-span-3 sm:col-span-1 md:col-span-2 flex items-center justify-start sm:justify-center">
+                  <Label className="text-xs font-medium md:hidden mr-2 sm:hidden">FAIT</Label> {/* Hidden on SM up if text clashes */}
                   <Button
                     type="button"
                     variant={set.completed ? "default" : "outline"}
@@ -225,7 +351,8 @@ const ExerciseForm = ({
                   </Button>
                 </div>
               )}
-              <div className="col-span-1">
+              {/* Delete Set Button */}
+              <div className={`flex items-center ${isActive ? 'col-span-2 sm:col-span-1' : 'col-span-6 sm:col-span-12'} justify-end md:col-span-1 md:justify-end`}>
                 <Button
                   variant="ghost"
                   size="sm"

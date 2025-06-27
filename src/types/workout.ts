@@ -3,6 +3,8 @@ export interface Set {
   id: string;
   weight: number | null;
   reps: number | null;
+  duration: number | null; // Duration in seconds
+  setType: 'reps' | 'timer';
   completed: boolean;
 }
 

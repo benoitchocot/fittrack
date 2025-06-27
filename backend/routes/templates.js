@@ -87,28 +87,32 @@ router.post("/", authMiddleware, async (req, res) => {
               set
             );
             const setResult = await runExec(
-              "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed) VALUES (?, ?, ?, ?, ?)",
+              "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed, setType, duration) VALUES (?, ?, ?, ?, ?, ?, ?)",
               [
                 newNamedExerciseId,
                 set.set_order || null,
-                set.kg || 0,
-                set.reps || 0,
+                set.kg || null, 
+                set.setType === 'timer' ? null : (set.reps || null),
                 completedStatus,
+                set.setType || 'reps',
+                set.setType === 'reps' ? null : (set.duration || null)
               ]
             );
             savedSets.push({
               id: setResult.lastID,
-              template_named_exercise_id: newNamedExerciseId, // Corrected to newNamedExerciseId
+              template_named_exercise_id: newNamedExerciseId, 
               set_order: set.set_order || null,
-              kg: set.kg || 0,
-              reps: set.reps || 0,
+              kg: set.kg || null,
+              reps: set.setType === 'timer' ? null : (set.reps || null),
               completed: completedStatus,
+              setType: set.setType || 'reps',
+              duration: set.setType === 'reps' ? null : (set.duration || null),
             });
           }
         }
         savedExercises.push({
           id: newNamedExerciseId,
-          template_id: newTemplateId, // Corrected to newTemplateId
+          template_id: newTemplateId, 
           exercise_name: exercise.exercise_name,
           notes: exercise.notes || null,
           order_num: exercise.order_num || null,
@@ -127,7 +131,7 @@ router.post("/", authMiddleware, async (req, res) => {
       userId: userId,
       name: name,
       description: description || null,
-      exercises: savedExercises, // Include processed exercises
+      exercises: savedExercises, 
     });
   } catch (error) {
     console.error(
@@ -172,12 +176,15 @@ router.get("/", authMiddleware, async (req, res) => {
 
       for (const namedExercise of namedExercises) {
         const sets = await runQuery(
-          "SELECT id, template_named_exercise_id, set_order, kg, reps, completed FROM exercise_sets WHERE template_named_exercise_id = ? ORDER BY set_order",
+          "SELECT id, template_named_exercise_id, set_order, kg, reps, completed, setType, duration FROM exercise_sets WHERE template_named_exercise_id = ? ORDER BY set_order",
           [namedExercise.id]
         );
         namedExercise.sets = sets.map((s) => ({
           ...s,
           completed: !!s.completed,
+          setType: s.setType || 'reps', 
+          duration: s.duration, 
+          reps: s.reps, 
         }));
       }
       template.exercises = namedExercises;
@@ -223,12 +230,15 @@ router.get("/:id", authMiddleware, async (req, res) => {
 
     for (const namedExercise of namedExercises) {
       const sets = await runQuery(
-        "SELECT id, template_named_exercise_id, set_order, kg, reps, completed FROM exercise_sets WHERE template_named_exercise_id = ? ORDER BY set_order",
+        "SELECT id, template_named_exercise_id, set_order, kg, reps, completed, setType, duration FROM exercise_sets WHERE template_named_exercise_id = ? ORDER BY set_order",
         [namedExercise.id]
       );
       namedExercise.sets = sets.map((s) => ({
         ...s,
         completed: !!s.completed,
+        setType: s.setType || 'reps',
+        duration: s.duration,
+        reps: s.reps,
       }));
     }
     singleTemplate.exercises = namedExercises;
@@ -342,22 +352,26 @@ router.put("/:id", authMiddleware, async (req, res) => {
             set
           );
           const setResult = await runExec(
-            "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed, setType, duration) VALUES (?, ?, ?, ?, ?, ?, ?)",
             [
-              newNamedExerciseId, // Consistent usage here
+              newNamedExerciseId, 
               set.set_order || null,
-              set.kg || 0,
-              set.reps || 0,
+              set.kg || null,
+              set.setType === 'timer' ? null : (set.reps || null),
               completedStatus,
+              set.setType || 'reps',
+              set.setType === 'reps' ? null : (set.duration || null)
             ]
           );
           processedSets.push({
             id: setResult.lastID,
             template_named_exercise_id: newNamedExerciseId,
             set_order: set.set_order || null,
-            kg: set.kg || 0,
-            reps: set.reps || 0,
+            kg: set.kg || null,
+            reps: set.setType === 'timer' ? null : (set.reps || null),
             completed: completedStatus,
+            setType: set.setType || 'reps',
+            duration: set.setType === 'reps' ? null : (set.duration || null),
           });
         }
       }
@@ -379,7 +393,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
       userId: parseInt(userId, 10), // Ensure userId is also an int if it comes from req.user.userId as string
       name: name,
       description: description,
-      exercises: processedExercises, // Send back the processed exercises and sets with their new DB IDs
+      exercises: processedExercises, 
     });
   } catch (error) {
     console.error(

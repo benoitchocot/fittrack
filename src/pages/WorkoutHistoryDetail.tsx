@@ -95,13 +95,30 @@ const WorkoutHistoryDetail = () => {
 
   const { name, startedAt, finishedAt, exercises } = historyEntry.workout_details;
 
-  const calculateDuration = (start: string | undefined, end: string | null | undefined): string => {
+  const calculateWorkoutDuration = (start: string | undefined, end: string | null | undefined): string => {
     if (!start || !end) return "Durée non disponible";
     const durationMs = new Date(end).getTime() - new Date(start).getTime();
     const minutes = Math.floor(durationMs / 60000);
     const seconds = Math.floor((durationMs % 60000) / 1000);
     return `${minutes}m ${seconds}s`;
   };
+
+  // Helper function to format seconds into mm:ss or hh:mm:ss for display
+  const formatSecondsForDisplay = (totalSeconds: number | null | undefined): string => {
+    if (totalSeconds == null) return "-";
+    if (totalSeconds === 0) return "0s";
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+  
+    let parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (seconds > 0 || (hours === 0 && minutes === 0)) parts.push(`${seconds}s`); // Show 0s if everything else is 0
+  
+    return parts.length > 0 ? parts.join(' ') : "0s";
+  };
+
 
   return (
     <>
@@ -124,7 +141,7 @@ const WorkoutHistoryDetail = () => {
               <p><span className="font-semibold">Date:</span> {new Date(startedAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             )}
             {finishedAt && startedAt && (
-              <p><span className="font-semibold">Durée:</span> {calculateDuration(startedAt, finishedAt)}</p>
+              <p><span className="font-semibold">Durée:</span> {calculateWorkoutDuration(startedAt, finishedAt)}</p>
             )}
             {/* Add total volume here if available in historyEntry */}
           </div>
@@ -144,18 +161,27 @@ const WorkoutHistoryDetail = () => {
               <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-2 mb-1 text-xs font-medium text-muted-foreground px-2">
                   <span>Série</span>
-                  <span>Poids & Répétitions</span>
+                  <span>Performance</span>
                   <span className="text-right">Statut</span>
                 </div>
-                {exercise.sets.map((set, setIndex) => (
-                  <div key={set.id || setIndex} className="flex justify-between items-center p-2 rounded bg-gray-50 dark:bg-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-600 transition-colors">
-                    <span className="text-sm font-medium w-1/3">Série {setIndex + 1}</span>
-                    <span className="text-sm w-1/3 text-center">{set.kg ?? set.weight} kg x {set.reps} reps</span>
-                    <span className={`text-sm font-medium w-1/3 text-right ${set.completed ? 'text-green-500' : 'text-red-500'}`}>
-                      {set.completed ? 'Terminé' : 'Non terminé'}
-                    </span>
-                  </div>
-                ))}
+                {exercise.sets.map((set, setIndex) => {
+                  // Ensure setType has a default for older data that might not have it
+                  const currentSetType = set.setType || 'reps';
+                  return (
+                    <div key={set.id || setIndex} className="flex justify-between items-center p-2 rounded bg-gray-50 dark:bg-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-600 transition-colors">
+                      <span className="text-sm font-medium w-1/3">Série {setIndex + 1}</span>
+                      <span className="text-sm w-1/3 text-center">
+                        {(set.weight || set.kg) ? `${set.weight ?? set.kg} kg x ` : ""}
+                        {currentSetType === 'timer' 
+                          ? `${formatSecondsForDisplay(set.duration)}` 
+                          : `${set.reps ?? 0} reps`}
+                      </span>
+                      <span className={`text-sm font-medium w-1/3 text-right ${set.completed ? 'text-green-500' : 'text-red-500'}`}>
+                        {set.completed ? 'Terminé' : 'Non terminé'}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}

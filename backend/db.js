@@ -90,9 +90,29 @@ db.run(`
       set_order INTEGER,
       kg INTEGER NULL,
       reps INTEGER NULL,
-      completed BOOLEAN DEFAULT 0 
+      completed BOOLEAN DEFAULT 0,
+      setType TEXT DEFAULT 'reps', 
+      duration INTEGER NULL
     )
   `);
+  
+  // Add setType to exercise_sets if it doesn't exist
+  db.run("ALTER TABLE exercise_sets ADD COLUMN setType TEXT DEFAULT 'reps'", (err) => {
+    if (err && !err.message.includes("duplicate column name")) {
+      console.error("Error adding 'setType' column to 'exercise_sets' table:", err.message);
+    } else if (!err) {
+      console.log("Column 'setType' added to 'exercise_sets' table or already existed.");
+    }
+  });
+
+  // Add duration to exercise_sets if it doesn't exist
+  db.run("ALTER TABLE exercise_sets ADD COLUMN duration INTEGER NULL", (err) => {
+    if (err && !err.message.includes("duplicate column name")) {
+      console.error("Error adding 'duration' column to 'exercise_sets' table:", err.message);
+    } else if (!err) {
+      console.log("Column 'duration' added to 'exercise_sets' table or already existed.");
+    }
+  });
 
   // Daily Nutrition Logs
   db.run(`
