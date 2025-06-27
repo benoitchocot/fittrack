@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import NavBar from "@/components/NavBar";
 import ExerciseForm from "@/components/ExerciseForm";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
 import { getToken } from "@/utils/auth";
@@ -347,7 +346,6 @@ const ActiveWorkout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
-      <NavBar />
       <div className="container px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>

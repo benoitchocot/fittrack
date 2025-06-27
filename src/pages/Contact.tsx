@@ -11,7 +11,7 @@ const ContactPage: React.FC = () => {
 
   return (
     <>
-      <div className="container mx-auto p-4 pt-20"> {/* Added pt-20 for padding below NavBar */}
+      <div className="container mx-auto p-4 pt-20"> 
         <h1 className="text-3xl font-bold mb-6">Contactez-nous</h1>
         <form
           action={formspreeEndpoint}

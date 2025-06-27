@@ -28,7 +28,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <NavBar /> {/* NavBar is now global */}
+          <NavBar /> 
           <Routes>
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />

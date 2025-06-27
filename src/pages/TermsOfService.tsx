@@ -6,7 +6,6 @@ const TermsOfService: React.FC = () => {
     <>
       <div className="container mx-auto p-4 pt-20">
         {" "}
-        {/* Added pt-20 for padding below NavBar */}
         <h1 className="text-3xl font-bold mb-6">
           Conditions Générales d'Utilisation (CGU)
         </h1>

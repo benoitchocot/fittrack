@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import NavBar from '../components/NavBar'; // Adjust path if necessary
 import { Button } from '../components/ui/button'; // Adjust path if necessary
 import { WorkoutHistory } from '../types/workout'; // Adjust path if necessary
 import BASE_URL from '../config'; // Adjust path if necessary
@@ -58,7 +57,6 @@ const WorkoutHistoryDetail = () => {
   if (loading) {
     return (
       <>
-        <NavBar />
         <div className="container px-4 py-6 text-center">Chargement des détails de l'historique...</div>
       </>
     );
@@ -67,7 +65,6 @@ const WorkoutHistoryDetail = () => {
   if (error) {
     return (
       <>
-        <NavBar />
         <div className="container px-4 py-6 text-center text-red-500">Erreur: {error}</div>
       </>
     );
@@ -76,7 +73,6 @@ const WorkoutHistoryDetail = () => {
   if (!historyEntry) {
     return (
       <>
-        <NavBar />
         <div className="container px-4 py-6 text-center">Aucun détail trouvé pour cet historique.</div>
       </>
     );
@@ -85,7 +81,6 @@ const WorkoutHistoryDetail = () => {
   if (!historyEntry.workout_details) {
     return (
       <>
-        <NavBar />
         <div className="container px-4 py-6 text-center text-red-500">
           Erreur: Données de détails de la séance (workout_details) manquantes pour cet historique.
         </div>
@@ -124,7 +119,6 @@ const WorkoutHistoryDetail = () => {
 
   return (
     <>
-      <NavBar />
       <div className="container px-4 py-6 max-w-4xl mx-auto">
         <Button 
           variant="outline" 

@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import NavBar from "@/components/NavBar";
 import ExerciseForm from "@/components/ExerciseForm";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
 // import { getToken } from "@/utils/auth"; // Supprimer cet import
@@ -359,7 +358,6 @@ const TemplateEditor = () => {
   if ((loading && !isEditMode) || (isLoadingTemplate && isEditMode)) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
-        <NavBar />
         <div className="container px-4 py-6 text-center">
           <p>Chargement {isEditMode ? "du modèle" : "des modèles"}...</p>
         </div>
@@ -374,7 +372,6 @@ const TemplateEditor = () => {
     // Only show general error if not in edit mode or if specific template load hasn't started/failed
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
-        <NavBar />
         <div className="container px-4 py-6 text-center">
           <p className="text-red-500">
             Erreur lors du chargement des modèles: {error}
@@ -387,7 +384,6 @@ const TemplateEditor = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
-      <NavBar />
       <div className="container px-4 py-6">
         <div className="mb-6">
           <Button
