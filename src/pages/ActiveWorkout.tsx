@@ -379,12 +379,8 @@ const ActiveWorkout = () => {
                 <Play className="w-5 h-5 mr-2" />
                 Reprendre
               </Button>
-            ) : (
-              <Button onClick={handlePauseWorkout} size="lg" variant="outline" className="border-yellow-500 text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600">
-                <Pause className="w-5 h-5 mr-2" />
-                Mettre en pause
-              </Button>
-            )}
+          ) : ""
+          }
           </div>
 
         <div className="space-y-4 mb-6">
