@@ -6,12 +6,11 @@ const generateId = () => Date.now().toString();
 const generateExercise = (name = "", order_num = 0): Exercise => ({
   id: generateId(),
   name: name,
-  exerciseType: 'reps', // Default new exercises to 'reps'
+  exerciseType: 'reps', // Only 'reps' type is now available
   sets: [{ 
     id: generateId(), 
     weight: null, 
     reps: null,
-    duration: null, 
     completed: false 
   }],
   order_num: order_num,
@@ -30,18 +29,18 @@ export const createWorkoutTemplate = (name: string): WorkoutTemplate => {
 
 export const startWorkout = (template: any): ActiveWorkout => { 
   const transformedExercises = (template.exercises || []).map((ex: any) => {
-    const currentExerciseType = ex.exerciseType || 'reps'; // Default to 'reps' if not defined in template
+    // const currentExerciseType = ex.exerciseType || 'reps'; // No longer needed, always 'reps'
     return {
       id: ex.id || generateId(), 
       name: ex.exercise_name || ex.name || '', 
       comment: ex.notes || ex.comment,        
-      exerciseType: currentExerciseType,
+      exerciseType: 'reps', // Always 'reps'
       order_num: ex.order_num !== undefined ? ex.order_num : 0,
       sets: (ex.sets || []).map((s: any) => ({
         id: s.id || generateId(), 
         weight: s.kg ?? s.weight ?? null, 
-        reps: currentExerciseType === 'reps' ? (s.reps ?? 0) : null,
-        duration: currentExerciseType === 'timer' ? (s.duration ?? 0) : null,
+        reps: s.reps ?? 0, // Directly assign reps
+        // duration: currentExerciseType === 'timer' ? (s.duration ?? 0) : null, // Duration removed
         completed: s.completed === undefined ? false : !!s.completed, 
       })),
     };
@@ -90,7 +89,7 @@ export const updateExercise = (
 export const getLastCompletedSetsForExercise = (
   exerciseName: string,
   history: WorkoutHistory[]
-): Array<{ weight: number | null; reps: number | null; duration: number | null } | null> | null => {
+): Array<{ weight: number | null; reps: number | null; } | null> | null => { // Removed duration from return type
   if (!history || history.length === 0) {
     return null;
   }
@@ -106,17 +105,15 @@ export const getLastCompletedSetsForExercise = (
           return []; 
         }
         
-        // Determine the exerciseType from the historical exercise entry
-        const historicalExerciseType = matchingExerciseInHistory.exerciseType || 'reps';
+        // const historicalExerciseType = matchingExerciseInHistory.exerciseType || 'reps'; // Not strictly needed now but good for clarity if old data exists
 
-        const completedSetsData: Array<{ weight: number | null; reps: number | null; duration: number | null } | null> = [];
+        const completedSetsData: Array<{ weight: number | null; reps: number | null; } | null> = []; // Removed duration
         for (const historicalSet of matchingExerciseInHistory.sets) {
           if (historicalSet.completed) {
             completedSetsData.push({
               weight: historicalSet.weight,
-              // Return both, the caller will decide based on the *current* exercise's type
               reps: historicalSet.reps, 
-              duration: historicalSet.duration,
+              // duration: historicalSet.duration, // Duration removed
             });
           } else {
             completedSetsData.push(null); 

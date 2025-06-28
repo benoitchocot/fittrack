@@ -54,8 +54,7 @@ const ActiveWorkout = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showConfirmNewWorkoutDialog, setShowConfirmNewWorkoutDialog] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
-  // Update the type for historicalRefs to include duration
-  const [historicalRefs, setHistoricalRefs] = useState<Map<string, Array<{ weight: number | null; reps: number | null; duration: number | null; } | null> | null>>(new Map());
+  const [historicalRefs, setHistoricalRefs] = useState<Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>>(new Map());
 
 
   useEffect(() => {
@@ -105,9 +104,8 @@ const ActiveWorkout = () => {
   useEffect(() => {
     const pausedWorkoutDetails = getPausedWorkout();
     if (activeWorkout && activeWorkout.id && (!pausedWorkoutDetails || pausedWorkoutDetails.id !== activeWorkout.id) && !loadingHistory && history) {
-      const newRefs = new Map<string, Array<{ weight: number | null; reps: number | null; duration: number | null; } | null> | null>();
+      const newRefs = new Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>();
       for (const exercise of activeWorkout.exercises) {
-        // getLastCompletedSetsForExercise now returns reps and duration
         const refDataArray = getLastCompletedSetsForExercise(exercise.name, history);
         newRefs.set(exercise.id, refDataArray);
       }
@@ -154,20 +152,17 @@ const ActiveWorkout = () => {
 
   const handleAddExercise = () => {
     if (activeWorkout) {
-      // When adding a new exercise, default its type to 'reps'
-      // and initialize its first set accordingly.
-      const defaultExerciseType = 'reps';
       const newSet: ExerciseSet = {
         id: Date.now().toString() + "-set",
         weight: null,
-        reps: defaultExerciseType === 'reps' ? 0 : null,
-        duration: defaultExerciseType === 'timer' ? 0 : null,
+        reps: 0, // Always reps
+        // duration field removed from Set type
         completed: false,
       };
       const newExercise: Exercise = {
         id: Date.now().toString(),
         name: "Nouvel Exercice",
-        exerciseType: defaultExerciseType, // Set default exerciseType
+        exerciseType: 'reps', // Always 'reps'
         sets: [newSet],
         comment: "",
         order_num: activeWorkout.exercises.length // Assign order_num
