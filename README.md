@@ -10,11 +10,23 @@ Ce dépôt contient tout le nécessaire pour exécuter l'application en local sa
 - Suivi des exercices de musculation
 - Interface frontend responsive et moderne
 - API Node.js simple à déployer
+- Node.js ≥ v18 pour exécuter localement sans Docker
 
 ---
 
-- (Optionnel) Node.js ≥ v18 pour exécuter localement sans Docker
 
+## 📦 Lancement avec Docker (recommandé)
+
+Pour exécuter l'application **via Docker**, assurez-vous d'avoir Docker installé, puis exécutez :
+
+```bash
+docker compose up -d --build
+```
+Cela lancera automatiquement le frontend sur http://localhost:9999 et le backend sur http://localhost:3001.
+
+> ⚠️ Assurez-vous que **Docker** est bien installé sur votre machine.
+
+---
 
 ## 🧪 Lancement en mode développement (sans Docker)
 
