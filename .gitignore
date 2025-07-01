@@ -30,3 +30,4 @@ dist-ssr
 .env.test
 .env.production
 .env.local
+/generated/prisma
