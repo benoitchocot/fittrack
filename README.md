@@ -16,7 +16,7 @@ Ce dépôt contient tout le nécessaire pour exécuter l'application en local sa
 
 ## 📦 Lancement avec Docker (recommandé)
 
-Pour exécuter l'application **via Docker**, assurez-vous d'avoir Docker installé, puis exécutez :
+Pour exécuter l'application **via Docker**, assurez-vous d'avoir Docker installé, puis exécutez à la racine du projet :
 
 ```bash
 docker compose up -d --build
