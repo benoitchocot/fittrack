@@ -1,0 +1,22 @@
+services:
+  muscu-app-back:
+    build: ./backend
+    container_name: muscu-app-back
+    ports:
+      - "3001:3001"  # Le backend expose le port 80 dans son Dockerfile
+    volumes:
+      - muscu-data:/app/data
+    restart: unless-stopped
+
+  muscu-front:
+    build: ./
+    container_name: muscu-front
+    ports:
+      - "8080:80"  # Le frontend est servi par Nginx sur le port 80
+    volumes:
+      - muscu-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  muscu-data:
+
