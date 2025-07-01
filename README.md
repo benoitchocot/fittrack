@@ -21,7 +21,7 @@ Pour exécuter l'application **via Docker**, assurez-vous d'avoir Docker install
 ```bash
 docker compose up -d --build
 ```
-Cela lancera automatiquement le frontend sur http://localhost:9999 et le backend sur http://localhost:3001.
+Cela lancera automatiquement le frontend sur http://localhost:8080 et le backend sur http://localhost:3001.
 
 > ⚠️ Assurez-vous que **Docker** est bien installé sur votre machine.
 
