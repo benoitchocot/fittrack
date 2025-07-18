@@ -72,6 +72,14 @@ const ExerciseForm = ({
   const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setExerciseNameInput(value);
+    if (value.length > 0) {
+      const filteredSuggestions = allExercises
+        .filter((ex) => ex.toLowerCase().includes(value.toLowerCase()))
+        .slice(0, 5); // Limit to 5 suggestions
+      setSuggestions(filteredSuggestions);
+    } else {
+      setSuggestions([]);
+    }
     onUpdate({ ...exercise, name: value, exerciseType: 'reps' }); // Ensure type is 'reps'
   };
 

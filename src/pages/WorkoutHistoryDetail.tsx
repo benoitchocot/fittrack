@@ -132,7 +132,6 @@ const WorkoutHistoryDetail = () => {
         <div className="p-6 bg-white rounded-lg shadow-md dark:bg-zinc-900 mb-6">
           <h1 className="text-3xl font-bold mb-3">{name}</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <p><span className="font-semibold">ID de la séance:</span> {historyId}</p>
             {startedAt && (
               <p><span className="font-semibold">Date:</span> {new Date(startedAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             )}

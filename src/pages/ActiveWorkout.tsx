@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +28,7 @@ import { apiFetch } from "../utils/api";
 const ActiveWorkout = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const {
     data: templates,
@@ -58,52 +59,6 @@ const ActiveWorkout = () => {
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
 
 
-  useEffect(() => {
-    const pausedWorkout = getPausedWorkout();
-    if (pausedWorkout) {
-      setActiveWorkout(pausedWorkout);
-      if (pausedWorkout.historicalRefs) {
-        setHistoricalRefs(new Map(pausedWorkout.historicalRefs));
-        setIsHistoryLoaded(true);
-      }
-      if (pausedWorkout.isPaused && pausedWorkout.elapsedTimeBeforePause) {
-        setElapsedTime(pausedWorkout.elapsedTimeBeforePause);
-      } else if (pausedWorkout.elapsedTimeBeforePause) {
-        // Resumed but tab closed, calculate time since it was "resumed" (unpaused)
-        const timeSinceUnpaused = pausedWorkout.pausedAt ? (new Date().getTime() - new Date(pausedWorkout.pausedAt).getTime()) / 1000 : 0;
-        setElapsedTime(Math.floor(pausedWorkout.elapsedTimeBeforePause + timeSinceUnpaused));
-      } else {
-        // No pause info, just calculate from start
-        const start = new Date(pausedWorkout.startedAt).getTime();
-        const now = new Date().getTime();
-        setElapsedTime(Math.floor((now - start) / 1000));
-      }
-
-      // If there's a paused workout, and user is trying to load a new one via URL
-      if (id && (!pausedWorkout.id || parseInt(id) !== pausedWorkout.id)) {
-         // Check if the id from URL matches the paused workout's template id
-         // Assuming WorkoutTemplate's id is a number and ActiveWorkout's id (from WorkoutTemplate) is also a number
-        const templateIdFromUrl = parseInt(id);
-        if (templateIdFromUrl !== pausedWorkout.id) { // If URL id is different from paused workout's template id
-            const template = templates.find((t) => t.id === templateIdFromUrl);
-            if (template) {
-                setPendingTemplate(template);
-                setShowConfirmNewWorkoutDialog(true);
-            }
-        }
-      }
-    } else if (!loadingTemplates && templates.length > 0 && id) {
-      // No paused workout, try to load from template ID
-      const template = templates.find((t) => t.id === parseInt(id));
-      if (template) {
-        setActiveWorkout(startWorkout(template));
-        // Timer for new workout will start in the next useEffect
-      } else {
-        navigate("/");
-        toast.error("Modèle de séance introuvable");
-      }
-    }
-  }, [id, templates, loadingTemplates, navigate]); // Removed activeWorkout from deps to avoid loop
 
   // Effect for processing historical references
   useEffect(() => {
@@ -167,7 +122,7 @@ const ActiveWorkout = () => {
       };
       const newExercise: Exercise = {
         id: Date.now().toString(),
-        name: "Nouvel Exercice",
+        name: "",
         exerciseType: 'reps', // Always 'reps'
         sets: [newSet],
         comment: "",
@@ -217,20 +172,75 @@ const ActiveWorkout = () => {
     }
   };
 
+  const resumeWorkout = (workout: ActiveWorkoutType) => {
+    // Adjust startedAt to make the timer continue correctly from elapsedTimeBeforePause
+    const newStartedAt = new Date(Date.now() - (workout.elapsedTimeBeforePause || 0) * 1000);
+    const updatedResumedWorkout: ActiveWorkoutType = {
+      ...workout,
+      isPaused: false,
+      startedAt: newStartedAt,
+      pausedAt: undefined,
+      // elapsedTimeBeforePause remains as a record of the last pause point
+    };
+    setActiveWorkout(updatedResumedWorkout);
+    savePausedWorkout(updatedResumedWorkout); // Save resumed state
+    toast.success("Séance reprise !");
+  };
+
+  useEffect(() => {
+    const pausedWorkout = getPausedWorkout();
+    if (pausedWorkout) {
+      if (location.state?.resume) {
+        resumeWorkout(pausedWorkout);
+      } else {
+        setActiveWorkout(pausedWorkout);
+      }
+      if (pausedWorkout.historicalRefs) {
+        setHistoricalRefs(new Map(pausedWorkout.historicalRefs));
+        setIsHistoryLoaded(true);
+      }
+      if (pausedWorkout.isPaused && pausedWorkout.elapsedTimeBeforePause) {
+        setElapsedTime(pausedWorkout.elapsedTimeBeforePause);
+      } else if (pausedWorkout.elapsedTimeBeforePause) {
+        // Resumed but tab closed, calculate time since it was "resumed" (unpaused)
+        const timeSinceUnpaused = pausedWorkout.pausedAt ? (new Date().getTime() - new Date(pausedWorkout.pausedAt).getTime()) / 1000 : 0;
+        setElapsedTime(Math.floor(pausedWorkout.elapsedTimeBeforePause + timeSinceUnpaused));
+      } else {
+        // No pause info, just calculate from start
+        const start = new Date(pausedWorkout.startedAt).getTime();
+        const now = new Date().getTime();
+        setElapsedTime(Math.floor((now - start) / 1000));
+      }
+
+      // If there's a paused workout, and user is trying to load a new one via URL
+      if (id && (!pausedWorkout.id || parseInt(id) !== pausedWorkout.id)) {
+         // Check if the id from URL matches the paused workout's template id
+         // Assuming WorkoutTemplate's id is a number and ActiveWorkout's id (from WorkoutTemplate) is also a number
+        const templateIdFromUrl = parseInt(id);
+        if (templateIdFromUrl !== pausedWorkout.id) { // If URL id is different from paused workout's template id
+            const template = templates.find((t) => t.id === templateIdFromUrl);
+            if (template) {
+                setPendingTemplate(template);
+                setShowConfirmNewWorkoutDialog(true);
+            }
+        }
+      }
+    } else if (!loadingTemplates && templates.length > 0 && id) {
+      // No paused workout, try to load from template ID
+      const template = templates.find((t) => t.id === parseInt(id));
+      if (template) {
+        setActiveWorkout(startWorkout(template));
+        // Timer for new workout will start in the next useEffect
+      } else {
+        navigate("/");
+        toast.error("Modèle de séance introuvable");
+      }
+    }
+  }, [id, templates, loadingTemplates, navigate, location.state?.resume]); // Removed activeWorkout from deps to avoid loop
+
   const handleResumeWorkout = () => {
     if (activeWorkout && activeWorkout.isPaused) {
-      // Adjust startedAt to make the timer continue correctly from elapsedTimeBeforePause
-      const newStartedAt = new Date(Date.now() - (activeWorkout.elapsedTimeBeforePause || 0) * 1000);
-      const updatedResumedWorkout: ActiveWorkoutType = {
-        ...activeWorkout,
-        isPaused: false,
-        startedAt: newStartedAt, 
-        pausedAt: undefined, 
-        // elapsedTimeBeforePause remains as a record of the last pause point
-      };
-      setActiveWorkout(updatedResumedWorkout);
-      savePausedWorkout(updatedResumedWorkout); // Save resumed state
-      toast.success("Séance reprise !");
+      resumeWorkout(activeWorkout);
     }
   };
 

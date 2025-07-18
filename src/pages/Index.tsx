@@ -104,7 +104,7 @@ const Index = () => {
       // The ActiveWorkout component should handle loading paused workout irrespective of the ID in URL if one is found.
       // Navigating to `/active-workout` is safer as it doesn't assume the ID.
       // However, the prompt asks to navigate to `/workout/:id` which is actually `/active-workout/:id`
-      navigate(`/workout/${pausedWorkout.id}`);
+      navigate(`/workout/${pausedWorkout.id}`, { state: { resume: true } });
     }
   };
 
