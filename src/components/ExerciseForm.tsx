@@ -17,7 +17,7 @@ interface ExerciseFormProps {
   onMoveDown: (id: string) => void;
   exerciseIndex: number;
   totalExercises: number;
-  lastPerformanceData?: Array<{ weight: number | null; reps: number | null; } | null> | null;
+  historicalRefs?: Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>;
 }
 
 const ExerciseForm = ({
@@ -29,9 +29,10 @@ const ExerciseForm = ({
   onMoveDown,
   exerciseIndex,
   totalExercises,
-  lastPerformanceData,
+  historicalRefs,
 }: ExerciseFormProps) => {
   const [showComment, setShowComment] = useState(!!exercise.comment);
+  const lastPerformanceData = historicalRefs?.get(exercise.id);
 
   // Ensure exercise.exerciseType is always 'reps' as per updated types
   // This effect also handles cases where exercise prop might change from parent

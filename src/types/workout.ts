@@ -31,6 +31,7 @@ export interface ActiveWorkout extends WorkoutTemplate {
   isPaused?: boolean;
   pausedAt?: Date;
   elapsedTimeBeforePause?: number;
+  historicalRefs?: [string, Array<{ weight: number | null; reps: number | null; } | null> | null][];
   // Potentially other fields like description if they are part of what's saved
 }
 
