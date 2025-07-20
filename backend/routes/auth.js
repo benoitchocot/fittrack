@@ -25,7 +25,7 @@ router.post("/register", async (req, res) => {
       }
       const userId = this.lastID;
       const tokenPayload = { userId };
-      const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: "1d" });
+      const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: "3d" });
 
       res.json({
         success: true,
