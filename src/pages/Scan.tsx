@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
-import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5QrcodeScanType, Html5Qrcode } from "html5-qrcode";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ interface ScanHistoryItem {
   fiber: number;
 }
 
+
 const ScanPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("scanner");
   const [scanResult, setScanResult] = useState<string | null>(null);
@@ -56,40 +57,47 @@ const ScanPage: React.FC = () => {
         "reader",
         {
           fps: 10,
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            const minEdgePercentage = 0.7;
-            const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-            const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-            return {
-                width: qrboxSize,
-                height: qrboxSize,
-            };
-          },
-          formatsToSupport: Object.values(Html5QrcodeSupportedFormats),
+          qrbox: { width: 350, height: 200 }, // Adapté aux codes-barres horizontaux
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E
+          ],
+          supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true,
+          }
         },
         false
       );
 
       const onScanSuccess = (decodedText: string) => {
+        // Vérifie que c'est un code-barres plausible (EAN/UPC)
+        if (!/^\d{8,13}$/.test(decodedText)) {
+          console.warn("Code invalide détecté :", decodedText);
+          return;
+        }
+
         setScanResult(decodedText);
         toast.success(`Code-barres détecté : ${decodedText}`);
         fetchProductInfo(decodedText);
         setShowScanner(false);
-        scanner.clear();
+
+        scanner.clear().catch((err) => {
+          console.error("Erreur lors de l'arrêt du scanner :", err);
+        });
       };
 
       const onScanError = (error: any) => {
-        // console.error("Scan Error:", error);
+        // Optionnel : ignorer les erreurs fréquentes de détection
       };
 
       scanner.render(onScanSuccess, onScanError);
 
       return () => {
-        if (scanner) {
-          scanner.clear().catch(error => {
-            console.error("Failed to clear scanner", error)
-          });
-        }
+        scanner.clear().catch(error => {
+          console.error("Erreur lors du nettoyage du scanner :", error);
+        });
       };
     }
   }, [activeTab, showScanner]);
