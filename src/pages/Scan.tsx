@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,13 +57,7 @@ const ScanPage: React.FC = () => {
         {
           qrbox: { width: 250, height: 250 },
           fps: 5,
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.QR_CODE,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-          ],
+          formatsToSupport: Object.values(Html5QrcodeSupportedFormats),
         },
         false
       );
@@ -165,6 +159,21 @@ const ScanPage: React.FC = () => {
     }
   };
 
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const html5QrCode = new Html5Qrcode("reader");
+      try {
+        const decodedText = await html5QrCode.scanFile(file, false);
+        setScanResult(decodedText);
+        toast.success(`Code-barres détecté : ${decodedText}`);
+        fetchProductInfo(decodedText);
+      } catch (err) {
+        toast.error(`Erreur lors du scan de l'image: ${err}`);
+      }
+    }
+  };
+
   const handleDialogChange = (open: boolean) => {
     setIsDialogOpen(open);
     if (!open) {
@@ -190,16 +199,29 @@ const ScanPage: React.FC = () => {
                 <CardTitle>Scanner un code-barres</CardTitle>
               </CardHeader>
               <CardContent>
-                {showScanner ? (
-                  <div id="reader" style={{ width: '100%' }}></div>
-                ) : (
-                  <Button onClick={() => setShowScanner(true)}>Démarrer le scan</Button>
-                )}
-                {showScanner && (
-                  <Button variant="outline" onClick={() => setShowScanner(false)} className="mt-4">
-                    Arrêter le scan
-                  </Button>
-                )}
+                <div className="flex flex-col space-y-4">
+                  {showScanner ? (
+                    <div id="reader" style={{ width: '100%' }}></div>
+                  ) : (
+                    <Button onClick={() => setShowScanner(true)}>Démarrer le scan par caméra</Button>
+                  )}
+                  {showScanner && (
+                    <Button variant="outline" onClick={() => setShowScanner(false)} className="mt-4">
+                      Arrêter le scan
+                    </Button>
+                  )}
+                  <div className="text-center my-2">OU</div>
+                  <input
+                    type="file"
+                    id="file-scanner"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <label htmlFor="file-scanner" className="cursor-pointer">
+                    <Button as="span" variant="outline">Importer une image</Button>
+                  </label>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
