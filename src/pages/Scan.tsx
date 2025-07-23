@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // @ts-ignore
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,46 +48,49 @@ const ScanPage: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState<boolean>(false);
+  const [showScanner, setShowScanner] = useState<boolean>(false);
 
   useEffect(() => {
-    let scanner: Html5QrcodeScanner | null = null;
+    if (activeTab === 'scanner' && showScanner) {
+      const scanner = new Html5QrcodeScanner(
+        "reader",
+        {
+          qrbox: { width: 250, height: 250 },
+          fps: 5,
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+          ],
+        },
+        false
+      );
 
-    if (activeTab === 'scanner' && !scanResult) {
-      // Delay initialization to ensure the DOM element is ready
-      const timer = setTimeout(() => {
-        const readerElement = document.getElementById("reader");
-        if (readerElement) {
-          scanner = new Html5QrcodeScanner(
-            "reader",
-            {
-              qrbox: { width: 250, height: 250 },
-              fps: 5,
-            },
-            false
-          );
+      const onScanSuccess = (decodedText: string) => {
+        setScanResult(decodedText);
+        toast.success(`Code-barres détecté : ${decodedText}`);
+        fetchProductInfo(decodedText);
+        setShowScanner(false);
+        scanner.clear();
+      };
 
-          const onScanSuccess = (decodedText: string) => {
-            setScanResult(decodedText);
-            toast.success(`Code-barres détecté : ${decodedText}`);
-            fetchProductInfo(decodedText);
-          };
+      const onScanError = (error: any) => {
+        // console.error("Scan Error:", error);
+      };
 
-          const onScanError = (error: any) => {
-            // console.error("Scan Error:", error);
-          };
-
-          scanner.render(onScanSuccess, onScanError);
-        }
-      }, 100); // 100ms delay
+      scanner.render(onScanSuccess, onScanError);
 
       return () => {
-        clearTimeout(timer);
         if (scanner) {
-          scanner.clear().catch(error => console.error("Failed to clear scanner", error));
+          scanner.clear().catch(error => {
+            console.error("Failed to clear scanner", error)
+          });
         }
       };
     }
-  }, [activeTab, scanResult]);
+  }, [activeTab, showScanner]);
 
   useEffect(() => {
     if (activeTab === 'history') {
@@ -187,7 +190,16 @@ const ScanPage: React.FC = () => {
                 <CardTitle>Scanner un code-barres</CardTitle>
               </CardHeader>
               <CardContent>
-                {!scanResult && <div id="reader" style={{ width: '100%' }}></div>}
+                {showScanner ? (
+                  <div id="reader" style={{ width: '100%' }}></div>
+                ) : (
+                  <Button onClick={() => setShowScanner(true)}>Démarrer le scan</Button>
+                )}
+                {showScanner && (
+                  <Button variant="outline" onClick={() => setShowScanner(false)} className="mt-4">
+                    Arrêter le scan
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -208,11 +220,12 @@ const ScanPage: React.FC = () => {
                       <Card key={item.id}>
                         <CardHeader>
                           <CardTitle>{item.product_name}</CardTitle>
+                          <p className="text-sm text-gray-500">{new Date(item.scanned_at).toLocaleString()}</p>
                         </CardHeader>
                         <CardContent className="flex items-center space-x-4">
                           <img src={item.image_url} alt={item.product_name} className="w-24 h-24 object-cover rounded" />
                           <div>
-                            <p>Pour 100g:</p>
+                            <p>Pour 100g: </p>
                             <p>Calories: {item.calories} kcal</p>
                             <p>Protéines: {item.protein} g</p>
                             <p>Glucides: {item.carbohydrates} g</p>
