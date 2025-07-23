@@ -1,7 +1,7 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
-const dbPath = path.resolve(__dirname,"data", "data.sqlite3");
+const dbPath = path.resolve(__dirname, "data", "data.sqlite3");
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error("Erreur lors de l'ouverture de la base :", err);
@@ -23,8 +23,8 @@ db.serialize(() => {
     )
   `);
 
-    // Exercises
-db.run(`
+  // Exercises
+  db.run(`
   CREATE TABLE IF NOT EXISTS exercises (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
@@ -35,7 +35,7 @@ db.run(`
     FOREIGN KEY(template_id) REFERENCES templates(id) ON DELETE CASCADE
   )
 `);
-    
+
   // Templates
   db.run(`
     CREATE TABLE IF NOT EXISTS templates (
@@ -62,15 +62,22 @@ db.run(`
     if (err) {
       // Check if the error is because the column already exists
       if (err.message.includes("duplicate column name")) {
-        console.log("Column 'workout_details' already exists in 'history' table.");
+        console.log(
+          "Column 'workout_details' already exists in 'history' table."
+        );
       } else {
-        console.error("Error adding 'workout_details' column to 'history' table:", err.message);
+        console.error(
+          "Error adding 'workout_details' column to 'history' table:",
+          err.message
+        );
       }
     } else {
-      console.log("Column 'workout_details' added to 'history' table or already existed.");
+      console.log(
+        "Column 'workout_details' added to 'history' table or already existed."
+      );
     }
   });
-  
+
   // template_named_exercises
   db.run(`
     CREATE TABLE IF NOT EXISTS template_named_exercises (
@@ -82,7 +89,7 @@ db.run(`
       -- exerciseType TEXT DEFAULT 'reps' -- REMOVED
     )
   `);
-  
+
   // REMOVED: Add exerciseType to template_named_exercises if it doesn't exist
   // db.run("ALTER TABLE template_named_exercises ADD COLUMN exerciseType TEXT DEFAULT 'reps'", (err) => {
   //   if (err && !err.message.includes("duplicate column name")) {
@@ -130,6 +137,23 @@ db.run(`
     )
   `);
 
+  db.run(`
+      CREATE TABLE IF NOT EXISTS scan_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      barcode TEXT NOT NULL,
+      product_name TEXT NOT NULL,
+      image_url TEXT,
+      calories REAL,
+      protein REAL,
+      carbohydrates REAL,
+      fat REAL,
+      fiber REAL,
+      scanned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
+      )`
+  );
+
   // Logged Food Items (details for each daily_nutrition_logs entry)
   db.run(`
     CREATE TABLE IF NOT EXISTS logged_food_items (
@@ -146,20 +170,27 @@ db.run(`
     )
   `);
 });
-  // Add comment column to daily_nutrition_logs table if it doesn't exist
-  db.run("ALTER TABLE daily_nutrition_logs ADD COLUMN comment TEXT", (err) => {
-    if (err) {
-      // Check if the error is because the column already exists
-      if (err.message.includes("duplicate column name")) {
-        // This is expected if the column was already added manually or by a previous run
-        console.log("Column 'comment' already exists in 'daily_nutrition_logs' table.");
-      } else {
-        // For other errors, log them
-        console.error("Error adding 'comment' column to 'daily_nutrition_logs' table:", err.message);
-      }
+// Add comment column to daily_nutrition_logs table if it doesn't exist
+db.run("ALTER TABLE daily_nutrition_logs ADD COLUMN comment TEXT", (err) => {
+  if (err) {
+    // Check if the error is because the column already exists
+    if (err.message.includes("duplicate column name")) {
+      // This is expected if the column was already added manually or by a previous run
+      console.log(
+        "Column 'comment' already exists in 'daily_nutrition_logs' table."
+      );
     } else {
-      console.log("Column 'comment' added to 'daily_nutrition_logs' table or already existed if no error.");
+      // For other errors, log them
+      console.error(
+        "Error adding 'comment' column to 'daily_nutrition_logs' table:",
+        err.message
+      );
     }
-  });
+  } else {
+    console.log(
+      "Column 'comment' added to 'daily_nutrition_logs' table or already existed if no error."
+    );
+  }
+});
 
 module.exports = db;
