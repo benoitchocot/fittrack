@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/auth'); // Assuming auth.js is in 
 
 // GET /api/scan/history - Get scan history for the logged-in user
 router.get('/history', authMiddleware, (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const sql = "SELECT * FROM scan_history WHERE user_id = ? ORDER BY scanned_at DESC";
   db.all(sql, [userId], (err, rows) => {
     if (err) {
@@ -17,7 +17,7 @@ router.get('/history', authMiddleware, (req, res) => {
 
 // POST /api/scan/history - Save a new scan to the history
 router.post('/history', authMiddleware, (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const { barcode, product_name, image_url, calories, protein, carbohydrates, fat, fiber } = req.body;
 
   if (!barcode || !product_name) {

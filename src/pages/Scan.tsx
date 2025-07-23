@@ -34,6 +34,11 @@ interface ScanHistoryItem {
   product_name: string;
   image_url: string;
   scanned_at: string;
+  calories: number;
+  protein: number;
+  carbohydrates: number;
+  fat: number;
+  fiber: number;
 }
 
 const ScanPage: React.FC = () => {
@@ -45,35 +50,40 @@ const ScanPage: React.FC = () => {
   const [historyLoading, setHistoryLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    let scanner: Html5QrcodeScanner | null = null;
+
     if (activeTab === 'scanner' && !scanResult) {
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        {
-          qrbox: {
-            width: 250,
-            height: 250,
-          },
-          fps: 5,
-        },
-        false
-      );
+      // Delay initialization to ensure the DOM element is ready
+      const timer = setTimeout(() => {
+        const readerElement = document.getElementById("reader");
+        if (readerElement) {
+          scanner = new Html5QrcodeScanner(
+            "reader",
+            {
+              qrbox: { width: 250, height: 250 },
+              fps: 5,
+            },
+            false
+          );
 
-      const onScanSuccess = (decodedText: string) => {
-        setScanResult(decodedText);
-        toast.success(`Code-barres détecté : ${decodedText}`);
-        fetchProductInfo(decodedText);
-        scanner.clear();
-      };
+          const onScanSuccess = (decodedText: string) => {
+            setScanResult(decodedText);
+            toast.success(`Code-barres détecté : ${decodedText}`);
+            fetchProductInfo(decodedText);
+          };
 
-      const onScanError = (error: any) => {
-        // handle scan error, usually better to ignore them.
-      };
+          const onScanError = (error: any) => {
+            // console.error("Scan Error:", error);
+          };
 
-      scanner.render(onScanSuccess, onScanError);
+          scanner.render(onScanSuccess, onScanError);
+        }
+      }, 100); // 100ms delay
 
       return () => {
+        clearTimeout(timer);
         if (scanner) {
-          scanner.clear();
+          scanner.clear().catch(error => console.error("Failed to clear scanner", error));
         }
       };
     }
@@ -82,6 +92,11 @@ const ScanPage: React.FC = () => {
   useEffect(() => {
     if (activeTab === 'history') {
       fetchScanHistory();
+    }
+    // Reset scan state when switching away from the scanner tab
+    if (activeTab !== 'scanner') {
+      setScanResult(null);
+      setProductInfo(null);
     }
   }, [activeTab]);
 
@@ -190,13 +205,22 @@ const ScanPage: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     {scanHistory.map((item) => (
-                      <div key={item.id} className="flex items-center space-x-4">
-                        <img src={item.image_url} alt={item.product_name} className="w-16 h-16 object-cover rounded" />
-                        <div>
-                          <p className="font-semibold">{item.product_name}</p>
-                          <p className="text-sm text-gray-500">{new Date(item.scanned_at).toLocaleString()}</p>
-                        </div>
-                      </div>
+                      <Card key={item.id}>
+                        <CardHeader>
+                          <CardTitle>{item.product_name}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex items-center space-x-4">
+                          <img src={item.image_url} alt={item.product_name} className="w-24 h-24 object-cover rounded" />
+                          <div>
+                            <p>Pour 100g:</p>
+                            <p>Calories: {item.calories} kcal</p>
+                            <p>Protéines: {item.protein} g</p>
+                            <p>Glucides: {item.carbohydrates} g</p>
+                            <p>Lipides: {item.fat} g</p>
+                            <p>Fibres: {item.fiber} g</p>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 )}
@@ -213,12 +237,15 @@ const ScanPage: React.FC = () => {
             {productInfo && (
               <div>
                 <img src={productInfo.image_url} alt={productInfo.product_name} className="w-full h-auto" />
-                <DialogDescription>
-                  <p>Calories: {productInfo.nutriments['energy-kcal_100g']} kcal</p>
-                  <p>Protéines: {productInfo.nutriments.proteins_100g} g</p>
-                  <p>Glucides: {productInfo.nutriments.carbohydrates_100g} g</p>
-                  <p>Lipides: {productInfo.nutriments.fat_100g} g</p>
-                  <p>Fibres: {productInfo.nutriments.fiber_100g} g</p>
+                <DialogDescription asChild>
+                  <div>
+                    <div>Pour 100g: </div>
+                    <div>Calories: {productInfo.nutriments['energy-kcal_100g']} kcal</div>
+                    <div>Protéines: {productInfo.nutriments.proteins_100g} g</div>
+                    <div>Glucides: {productInfo.nutriments.carbohydrates_100g} g</div>
+                    <div>Lipides: {productInfo.nutriments.fat_100g} g</div>
+                    <div>Fibres: {productInfo.nutriments.fiber_100g} g</div>
+                  </div>
                 </DialogDescription>
               </div>
             )}
