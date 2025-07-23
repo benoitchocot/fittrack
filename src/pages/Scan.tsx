@@ -213,22 +213,6 @@ const ScanPage: React.FC = () => {
                   ) : (
                     <Button onClick={() => setShowScanner(true)}>Démarrer le scan par caméra</Button>
                   )}
-                  {showScanner && (
-                    <Button variant="outline" onClick={() => setShowScanner(false)} className="mt-4">
-                      Arrêter le scan
-                    </Button>
-                  )}
-                  <div className="text-center my-2">OU</div>
-                  <input
-                    type="file"
-                    id="file-scanner"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <label htmlFor="file-scanner" className="cursor-pointer">
-                    <Button as="span" variant="outline">Importer une image</Button>
-                  </label>
                 </div>
               </CardContent>
             </Card>
