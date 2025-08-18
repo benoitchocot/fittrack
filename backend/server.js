@@ -6,7 +6,8 @@ const templatesRoutes = require("./routes/templates");
 const historyRoutes = require("./routes/history");
 const authRoutes = require("./routes/auth");
 const nutritionRoutes = require("./routes/nutrition");
-const scanRoutes = require("./routes/scan");
+// const scanRoutes = require("./routes/scan");
+const dataRoutes = require("./routes/data");
 
 const app = express();
 const PORT = 3001;
@@ -28,13 +29,16 @@ app.use(cors({
 
 
 // Si tu utilises des requêtes avec Content-Type: application/json
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 app.use("/templates", templatesRoutes);
 app.use("/history", historyRoutes);
 app.use("/auth", authRoutes);
 app.use("/nutrition", nutritionRoutes);
-app.use("/scan", scanRoutes);
+// app.use("/scan", scanRoutes);
+app.use("/data", dataRoutes);
+
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
 });

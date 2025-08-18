@@ -18,6 +18,7 @@ import NutritionPage from "./pages/Nutrition";
 import ScanPage from "./pages/Scan"; // Import the new Scan page
 import TermsOfService from "./pages/TermsOfService"; // Import the new Terms of Service page
 import ContactPage from "./pages/Contact"; // Import the new Contact page
+import ProfilePage from "./pages/Profile"; // Import the new Profile page
 import AddToHomeScreenPrompt from "@/components/AddToHomeScreenPrompt"; // Import the new component
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const AppContent = () => {
                 <Route path="/history/:historyId" element={<WorkoutHistoryDetail />} />
                 <Route path="/nutrition" element={<NutritionPage />} />
                 <Route path="/scan" element={<ScanPage />} />
+                <Route path="/profil" element={<ProfilePage />} />
                 {/* Remove duplicate auth routes from here as they are defined above and public */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

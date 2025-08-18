@@ -411,9 +411,9 @@ const NutritionPage: React.FC = () => {
 
           <TabsContent value="history" className="mt-4">
             {historyLoading ? (
-              <p>Loading history...</p>
+              <p>Chargement...</p>
             ) : nutritionHistory.length === 0 ? (
-              <p>No nutrition history found.</p>
+              <p>Pas d'historique !</p>
             ) : (
               <div className="space-y-4 p-4">
                 {nutritionHistory.map((logEntry) => (
