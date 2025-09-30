@@ -112,7 +112,8 @@ const ActiveWorkout = () => {
         historicalRefs: Array.from(historicalRefs.entries()),
       };
       setActiveWorkout(updatedPausedWorkout);
-      toast.info("Séance mise en pause.");
+      saveActiveWorkout(updatedPausedWorkout); // Manually save the paused state immediately
+      toast.info("Séance annulée.");
       // Optionally navigate away, e.g., navigate("/");
     }
   };
@@ -452,9 +453,9 @@ const ActiveWorkout = () => {
                         setFinishDialogOpen(false);
                         navigate("/"); // Navigate to home after pausing
                     }}
-                    className="border-orange-500 text-orange-500 hover:bg-orange-50"
+                    className="border-red-500 text-red-500 hover:bg-red-50"
                     >
-                    Mettre en Pause et Quitter
+                    Quitter
                 </Button>
             )}
             <Button

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Added useNavigate and useLocation
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; // Added Input component
 import {
@@ -32,6 +32,7 @@ import { apiFetch } from "../utils/api";
 const Index = () => {
   const { token, loading: authLoading } = useAuth();
   const navigate = useNavigate(); // Added useNavigate
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("templates");
   const [pausedWorkout, setPausedWorkout] = useState<ActiveWorkoutType | null>(
     null
@@ -62,16 +63,13 @@ const Index = () => {
   });
 
   useEffect(() => {
-    const loadedPausedWorkout = getActiveWorkout();
-    if (loadedPausedWorkout && loadedPausedWorkout.isPaused) {
-      setPausedWorkout(loadedPausedWorkout);
-    } else if (loadedPausedWorkout && !loadedPausedWorkout.isPaused) {
-      // If it exists but is not marked as paused (e.g., resumed but tab closed before storage update)
-      // It's safer to clear it to avoid confusion, as ActiveWorkout page handles its own state.
-      clearActiveWorkout();
+    const activeWorkout = getActiveWorkout();
+    if (activeWorkout && activeWorkout.isPaused) {
+      setPausedWorkout(activeWorkout);
+    } else {
       setPausedWorkout(null);
     }
-  }, [token]); // Re-check if auth state changes, as user might have paused on another device/session
+  }, [location]);
 
   useEffect(() => {
     // The history.forEach loop and its console.warn have been removed.
