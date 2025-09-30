@@ -20,8 +20,8 @@ import {
   ActiveWorkout as ActiveWorkoutType,
 } from "@/types/workout"; // Added ActiveWorkoutType
 import {
-  getPausedWorkout,
-  clearPausedWorkout,
+  getActiveWorkout,
+  clearActiveWorkout,
 } from "@/utils/activeWorkoutStorage"; // Added paused workout utils
 import { toast } from "sonner";
 import { getToken } from "@/utils/auth";
@@ -62,13 +62,13 @@ const Index = () => {
   });
 
   useEffect(() => {
-    const loadedPausedWorkout = getPausedWorkout();
+    const loadedPausedWorkout = getActiveWorkout();
     if (loadedPausedWorkout && loadedPausedWorkout.isPaused) {
       setPausedWorkout(loadedPausedWorkout);
     } else if (loadedPausedWorkout && !loadedPausedWorkout.isPaused) {
       // If it exists but is not marked as paused (e.g., resumed but tab closed before storage update)
       // It's safer to clear it to avoid confusion, as ActiveWorkout page handles its own state.
-      clearPausedWorkout();
+      clearActiveWorkout();
       setPausedWorkout(null);
     }
   }, [token]); // Re-check if auth state changes, as user might have paused on another device/session
@@ -109,7 +109,7 @@ const Index = () => {
   };
 
   const handleDiscardPausedWorkout = () => {
-    clearPausedWorkout();
+    clearActiveWorkout();
     setPausedWorkout(null);
     toast.info("Séance en pause abandonnée.");
   };
