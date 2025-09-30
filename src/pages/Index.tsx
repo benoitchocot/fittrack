@@ -22,7 +22,7 @@ import {
 import {
   getPausedWorkout,
   clearPausedWorkout,
-} from "@/utils/pausedWorkoutStorage"; // Added paused workout utils
+} from "@/utils/activeWorkoutStorage"; // Added paused workout utils
 import { toast } from "sonner";
 import { getToken } from "@/utils/auth";
 import { useAuth } from "@/context/AuthContext";

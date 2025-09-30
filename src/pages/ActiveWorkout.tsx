@@ -13,7 +13,7 @@ import ExerciseForm from "@/components/ExerciseForm";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
 import { getToken } from "@/utils/auth";
 import { WorkoutTemplate, ActiveWorkout as ActiveWorkoutType, Exercise, Set as ExerciseSet, WorkoutHistory } from "@/types/workout"; // Ensure Set is imported, aliasing if necessary e.g. as ExerciseSet
-import { getPausedWorkout, savePausedWorkout, clearPausedWorkout } from "@/utils/pausedWorkoutStorage"; // Corrected path
+import { getActiveWorkout, saveActiveWorkout, clearActiveWorkout } from "@/utils/activeWorkoutStorage";
 import { ArrowLeft, CheckCircle2, Play, Pause, PlusCircle } from "lucide-react"; // Added Play and Pause icons
 import {
   startWorkout,
@@ -75,6 +75,13 @@ const ActiveWorkout = () => {
     }
   }, [activeWorkout, history, loadingHistory, id, isHistoryLoaded]);
 
+  // Auto-save workout state to localStorage
+  useEffect(() => {
+    if (activeWorkout) {
+      saveActiveWorkout(activeWorkout);
+    }
+  }, [activeWorkout]);
+
   // Timer logic
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -105,7 +112,6 @@ const ActiveWorkout = () => {
         historicalRefs: Array.from(historicalRefs.entries()),
       };
       setActiveWorkout(updatedPausedWorkout);
-      savePausedWorkout(updatedPausedWorkout);
       toast.info("Séance mise en pause.");
       // Optionally navigate away, e.g., navigate("/");
     }
@@ -131,9 +137,6 @@ const ActiveWorkout = () => {
       const updatedExercises = [...activeWorkout.exercises, newExercise];
       const updatedWorkout = { ...activeWorkout, exercises: updatedExercises };
       setActiveWorkout(updatedWorkout);
-      if (updatedWorkout.isPaused) {
-        savePausedWorkout(updatedWorkout);
-      }
       toast.success("Nouvel exercice ajouté !"); 
     }
   };
@@ -148,9 +151,6 @@ const ActiveWorkout = () => {
         newExercises[index - 1] = temp;
         const updatedWorkout = { ...activeWorkout, exercises: newExercises };
         setActiveWorkout(updatedWorkout);
-        if (updatedWorkout.isPaused) {
-          savePausedWorkout(updatedWorkout);
-        }
       }
     }
   };
@@ -165,9 +165,6 @@ const ActiveWorkout = () => {
         newExercises[index + 1] = temp;
         const updatedWorkout = { ...activeWorkout, exercises: newExercises };
         setActiveWorkout(updatedWorkout);
-        if (updatedWorkout.isPaused) {
-          savePausedWorkout(updatedWorkout);
-        }
       }
     }
   };
@@ -183,41 +180,40 @@ const ActiveWorkout = () => {
       // elapsedTimeBeforePause remains as a record of the last pause point
     };
     setActiveWorkout(updatedResumedWorkout);
-    savePausedWorkout(updatedResumedWorkout); // Save resumed state
     toast.success("Séance reprise !");
   };
 
   useEffect(() => {
-    const pausedWorkout = getPausedWorkout();
-    if (pausedWorkout) {
+    const activeWorkoutData = getActiveWorkout();
+    if (activeWorkoutData) {
       if (location.state?.resume) {
-        resumeWorkout(pausedWorkout);
+        resumeWorkout(activeWorkoutData);
       } else {
-        setActiveWorkout(pausedWorkout);
+        setActiveWorkout(activeWorkoutData);
       }
-      if (pausedWorkout.historicalRefs) {
-        setHistoricalRefs(new Map(pausedWorkout.historicalRefs));
+      if (activeWorkoutData.historicalRefs) {
+        setHistoricalRefs(new Map(activeWorkoutData.historicalRefs));
         setIsHistoryLoaded(true);
       }
-      if (pausedWorkout.isPaused && pausedWorkout.elapsedTimeBeforePause) {
-        setElapsedTime(pausedWorkout.elapsedTimeBeforePause);
-      } else if (pausedWorkout.elapsedTimeBeforePause) {
+      if (activeWorkoutData.isPaused && activeWorkoutData.elapsedTimeBeforePause) {
+        setElapsedTime(activeWorkoutData.elapsedTimeBeforePause);
+      } else if (activeWorkoutData.elapsedTimeBeforePause) {
         // Resumed but tab closed, calculate time since it was "resumed" (unpaused)
-        const timeSinceUnpaused = pausedWorkout.pausedAt ? (new Date().getTime() - new Date(pausedWorkout.pausedAt).getTime()) / 1000 : 0;
-        setElapsedTime(Math.floor(pausedWorkout.elapsedTimeBeforePause + timeSinceUnpaused));
+        const timeSinceUnpaused = activeWorkoutData.pausedAt ? (new Date().getTime() - new Date(activeWorkoutData.pausedAt).getTime()) / 1000 : 0;
+        setElapsedTime(Math.floor(activeWorkoutData.elapsedTimeBeforePause + timeSinceUnpaused));
       } else {
         // No pause info, just calculate from start
-        const start = new Date(pausedWorkout.startedAt).getTime();
+        const start = new Date(activeWorkoutData.startedAt).getTime();
         const now = new Date().getTime();
         setElapsedTime(Math.floor((now - start) / 1000));
       }
 
       // If there's a paused workout, and user is trying to load a new one via URL
-      if (id && (!pausedWorkout.id || parseInt(id) !== pausedWorkout.id)) {
+      if (id && (!activeWorkoutData.id || parseInt(id) !== activeWorkoutData.id)) {
          // Check if the id from URL matches the paused workout's template id
          // Assuming WorkoutTemplate's id is a number and ActiveWorkout's id (from WorkoutTemplate) is also a number
         const templateIdFromUrl = parseInt(id);
-        if (templateIdFromUrl !== pausedWorkout.id) { // If URL id is different from paused workout's template id
+        if (templateIdFromUrl !== activeWorkoutData.id) { // If URL id is different from paused workout's template id
             const template = templates.find((t) => t.id === templateIdFromUrl);
             if (template) {
                 setPendingTemplate(template);
@@ -248,9 +244,6 @@ const ActiveWorkout = () => {
     if (activeWorkout) {
       const updatedWorkout = updateExercise(activeWorkout, updatedExercise.id, updatedExercise) as ActiveWorkoutType;
       setActiveWorkout(updatedWorkout);
-      if (updatedWorkout.isPaused) { // Check isPaused on the new state
-        savePausedWorkout(updatedWorkout);
-      }
     }
   };
 
@@ -259,10 +252,6 @@ const ActiveWorkout = () => {
       const updatedExercises = activeWorkout.exercises.filter(ex => ex.id !== exerciseId);
       const updatedWorkout = { ...activeWorkout, exercises: updatedExercises };
       setActiveWorkout(updatedWorkout);
-      // If the workout is paused, save the changes immediately
-      if (updatedWorkout.isPaused) {
-        savePausedWorkout(updatedWorkout);
-      }
     }
   };
 
@@ -334,7 +323,7 @@ const ActiveWorkout = () => {
         
         // Optimistically update local history state.
         setLocalHistoryState([completedWorkout, ...history]);
-        clearPausedWorkout(); // Clear any paused workout from localStorage
+        clearActiveWorkout(); // Clear any paused workout from localStorage
         toast.success("Séance terminée et enregistrée !");
         navigate("/");
 
@@ -511,7 +500,7 @@ const ActiveWorkout = () => {
             <Button
               onClick={() => {
                 if (pendingTemplate) {
-                  clearPausedWorkout(); // Clear old paused workout
+                  clearActiveWorkout(); // Clear old paused workout
                   const newWorkout = startWorkout(pendingTemplate);
                   setActiveWorkout(newWorkout);
                   setElapsedTime(0); // Reset timer for new workout

@@ -1,6 +1,6 @@
 import { ActiveWorkout, Exercise, Set } from '../types/workout';
 
-const PAUSED_WORKOUT_KEY = 'pausedWorkout';
+const ACTIVE_WORKOUT_KEY = 'activeWorkout';
 
 // Helper function to safely convert a date input to an ISO string
 const safeDateToISOString = (dateInput: any): string | undefined => {
@@ -79,41 +79,41 @@ const deserializeWorkoutDates = (parsedWorkout: any): ActiveWorkout => {
   return workoutWithDates;
 };
 
-export const savePausedWorkout = (workout: ActiveWorkout): void => {
+export const saveActiveWorkout = (workout: ActiveWorkout): void => {
   try {
     const serializableWorkout = serializeWorkoutDates(workout);
     // Only attempt to stringify if serializableWorkout is not null/undefined
     if (serializableWorkout) {
-        localStorage.setItem(PAUSED_WORKOUT_KEY, JSON.stringify(serializableWorkout));
+        localStorage.setItem(ACTIVE_WORKOUT_KEY, JSON.stringify(serializableWorkout));
     } else {
         console.error('Failed to serialize workout, not saving to localStorage.');
     }
   } catch (error) {
-    console.error('Error saving paused workout to localStorage:', error);
+    console.error('Error saving active workout to localStorage:', error);
     // Optionally, notify the user or handle the error in a more user-friendly way
   }
 };
 
-export const getPausedWorkout = (): ActiveWorkout | null => {
+export const getActiveWorkout = (): ActiveWorkout | null => {
   try {
-    const storedWorkoutJson = localStorage.getItem(PAUSED_WORKOUT_KEY);
+    const storedWorkoutJson = localStorage.getItem(ACTIVE_WORKOUT_KEY);
     if (!storedWorkoutJson) {
       return null;
     }
     const parsedWorkout = JSON.parse(storedWorkoutJson);
     return deserializeWorkoutDates(parsedWorkout);
   } catch (error) {
-    console.error('Error retrieving paused workout from localStorage:', error);
+    console.error('Error retrieving active workout from localStorage:', error);
     // It might be good to clear the corrupted item if parsing fails
-    // clearPausedWorkout(); 
+    // clearActiveWorkout(); 
     return null;
   }
 };
 
-export const clearPausedWorkout = (): void => {
+export const clearActiveWorkout = (): void => {
   try {
-    localStorage.removeItem(PAUSED_WORKOUT_KEY);
+    localStorage.removeItem(ACTIVE_WORKOUT_KEY);
   } catch (error) {
-    console.error('Error clearing paused workout from localStorage:', error);
+    console.error('Error clearing active workout from localStorage:', error);
   }
 };
