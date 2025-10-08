@@ -89,9 +89,12 @@ export const updateExercise = (
 export const getLastCompletedSetsForExercise = (
   exerciseName: string,
   history: WorkoutHistory[]
-): Array<{ weight: number | null; reps: number | null; } | null> | null => { // Removed duration from return type
+): {
+  sets: Array<{ weight: number | null; reps: number | null } | null> | null;
+  comment: string | null;
+} => {
   if (!history || history.length === 0) {
-    return null;
+    return { sets: null, comment: null };
   }
 
   for (const historyEntry of history) {
@@ -101,29 +104,27 @@ export const getLastCompletedSetsForExercise = (
       );
 
       if (matchingExerciseInHistory) {
+        const comment = matchingExerciseInHistory.comment || null;
         if (!matchingExerciseInHistory.sets || matchingExerciseInHistory.sets.length === 0) {
-          return []; 
+          return { sets: [], comment };
         }
-        
-        // const historicalExerciseType = matchingExerciseInHistory.exerciseType || 'reps'; // Not strictly needed now but good for clarity if old data exists
 
-        const completedSetsData: Array<{ weight: number | null; reps: number | null; } | null> = []; // Removed duration
+        const completedSetsData: Array<{ weight: number | null; reps: number | null } | null> = [];
         for (const historicalSet of matchingExerciseInHistory.sets) {
           if (historicalSet.completed) {
             completedSetsData.push({
               weight: historicalSet.weight,
-              reps: historicalSet.reps, 
-              // duration: historicalSet.duration, // Duration removed
+              reps: historicalSet.reps,
             });
           } else {
-            completedSetsData.push(null); 
+            completedSetsData.push(null);
           }
         }
-        return completedSetsData;
+        return { sets: completedSetsData, comment };
       }
     }
   }
-  return null; 
+  return { sets: null, comment: null };
 };
 
 export const addExercise = (

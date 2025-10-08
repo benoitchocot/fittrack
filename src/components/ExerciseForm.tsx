@@ -17,7 +17,7 @@ interface ExerciseFormProps {
   onMoveDown: (id: string) => void;
   exerciseIndex: number;
   totalExercises: number;
-  historicalRefs?: Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>;
+  historicalRefs?: Map<string, { sets: Array<{ weight: number | null; reps: number | null } | null> | null; comment: string | null }>;
 }
 
 const ExerciseForm = ({
@@ -32,7 +32,10 @@ const ExerciseForm = ({
   historicalRefs,
 }: ExerciseFormProps) => {
   const [showComment, setShowComment] = useState(!!exercise.comment);
-  const lastPerformanceData = historicalRefs?.get(exercise.id);
+  const historicalData = historicalRefs?.get(exercise.id);
+  const lastPerformanceData = historicalData?.sets;
+  const lastComment = historicalData?.comment;
+
 
   // Ensure exercise.exerciseType is always 'reps' as per updated types
   // This effect also handles cases where exercise prop might change from parent
@@ -287,6 +290,11 @@ const ExerciseForm = ({
               onChange={handleCommentChange}
               className="text-sm"
             />
+            {lastComment && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Dernier commentaire: {lastComment}
+              </p>
+            )}
           </div>
         )}
       </CardContent>
