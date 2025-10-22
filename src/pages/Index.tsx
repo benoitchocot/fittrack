@@ -54,8 +54,8 @@ const Index = () => {
   const {
     data: history,
     setData: setLocalHistoryStateForIndex, // Explicit name
-    postData: postHistoryEntryToServerForIndex, // Explicit name (likely unused here)
     loading: loadingHistory,
+    refetch: refetchHistory,
   } = useRemoteStorage<WorkoutHistory[]>({
     initialValue: [],
     endpoint: `${BASE_URL}history`, // Use BASE_URL for consistency
@@ -64,11 +64,8 @@ const Index = () => {
 
   useEffect(() => {
     const activeWorkout = getActiveWorkout();
-    if (activeWorkout && activeWorkout.isPaused) {
-      setPausedWorkout(activeWorkout);
-    } else {
-      setPausedWorkout(null);
-    }
+    setPausedWorkout(activeWorkout); // This will set the workout if it exists, or null if it doesn't.
+    refetchHistory();
   }, [location]);
 
   useEffect(() => {
@@ -196,21 +193,21 @@ const Index = () => {
           <Card className="mb-6 bg-yellow-50 border-yellow-300 dark:bg-yellow-900 dark:border-yellow-700">
             <CardHeader>
               <CardTitle className="text-yellow-700 dark:text-yellow-300">
-                Séance en Pause
+                {pausedWorkout.isPaused ? 'Séance en Pause' : 'Séance en Cours'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <p>
                 <strong>Nom:</strong> {pausedWorkout.name}
               </p>
-              {pausedWorkout.pausedAt && (
+              {pausedWorkout.isPaused && pausedWorkout.pausedAt && (
                 <p>
                   <strong>En pause depuis:</strong>{" "}
                   {new Date(pausedWorkout.pausedAt).toLocaleString()}
                 </p>
               )}
               <p>
-                <strong>Temps écoulé lors de la pause:</strong>{" "}
+                <strong>Temps écoulé:</strong>{" "}
                 {formatTime(pausedWorkout.elapsedTimeBeforePause || 0)}
               </p>
             </CardContent>
