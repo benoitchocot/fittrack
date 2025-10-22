@@ -13,48 +13,45 @@ function useRemoteStorage<T>({ initialValue, endpoint }: UseRemoteStorageOptions
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Charger les données depuis le backend
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true); // Ensure loading is true when fetchData is called
-      setError(null); // Clear previous errors
-      try {
-        // authToken is checked before calling fetchData.
-        // apiFetch will handle token inclusion.
-        console.log('[useRemoteStorage] Attempting fetch via apiFetch. Endpoint:', endpoint);
-        
-        const res = await apiFetch(endpoint); // apiFetch handles Authorization header
-
-        // apiFetch throws for 401, which will be caught by the catch block.
-        // For other errors, we check response.ok.
-        if (!res.ok) {
-          const errorText = await res.text(); // Try to get more info from body
-          throw new Error(`Erreur de récupération: ${res.status} ${errorText}`);
-        }
-
-        const json = await res.json();
-        setData(json);
-      } catch (err) {
-        const specificError = err as Error;
-        if (specificError.message === 'Session expired. Redirecting to login.') {
-          // apiFetch has handled the redirect and thrown an error.
-          // No further action needed here for this specific error.
-          // setLoading(false) will be called in finally.
-        } else {
-          console.error(err);
-          setError(specificError.message || 'Impossible de charger les données');
-        }
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('[useRemoteStorage] Attempting fetch via apiFetch. Endpoint:', endpoint);
+      const res = await apiFetch(endpoint);
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Erreur de récupération: ${res.status} ${errorText}`);
       }
-    };
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      const specificError = err as Error;
+      if (specificError.message !== 'Session expired. Redirecting to login.') {
+        console.error(err);
+        setError(specificError.message || 'Impossible de charger les données');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Initial data load
+  useEffect(() => {
     if (authToken) {
       fetchData();
     } else {
+      setData(initialValue);
       setLoading(false);
     }
-  }, [endpoint, authToken]); // Removed initialValue from dependencies to prevent potential infinite loops
+  }, [endpoint, authToken]);
+
+  // Expose a refetch function
+  const refetch = () => {
+    if (authToken) {
+      fetchData();
+    }
+  };
 
   // Fonction pour envoyer des données via POST
   const postDataToServer = async (itemToPost: any) => { // 'any' for now, could be made generic for a single item
@@ -106,7 +103,7 @@ function useRemoteStorage<T>({ initialValue, endpoint }: UseRemoteStorageOptions
 
   // setData is now the direct state setter from useState.
   // postData is the new function for making POST requests.
-  return { data, setData, postData: postDataToServer, loading, error };
+  return { data, setData, postData: postDataToServer, loading, error, refetch };
 }
 
 export default useRemoteStorage;
