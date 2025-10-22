@@ -55,7 +55,7 @@ const ActiveWorkout = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showConfirmNewWorkoutDialog, setShowConfirmNewWorkoutDialog] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
-  const [historicalRefs, setHistoricalRefs] = useState<Map<string, { sets: Array<{ weight: number | null; reps: number | null } | null> | null; comment: string | null }>>(new Map());
+  const [historicalRefs, setHistoricalRefs] = useState<Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>>(new Map());
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
 
 
@@ -63,10 +63,10 @@ const ActiveWorkout = () => {
   // Effect for processing historical references
   useEffect(() => {
     if (activeWorkout && activeWorkout.id && !loadingHistory && history && !isHistoryLoaded) {
-      const newRefs = new Map<string, { sets: Array<{ weight: number | null; reps: number | null } | null> | null; comment: string | null }>();
+      const newRefs = new Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>();
       for (const exercise of activeWorkout.exercises) {
-        const refData = getLastCompletedSetsForExercise(exercise.name, history);
-        newRefs.set(exercise.id, refData);
+        const refDataArray = getLastCompletedSetsForExercise(exercise.name, history);
+        newRefs.set(exercise.id, refDataArray);
       }
       setHistoricalRefs(newRefs);
       setIsHistoryLoaded(true);
@@ -455,7 +455,7 @@ const ActiveWorkout = () => {
                     }}
                     className="border-orange-500 text-orange-500 hover:bg-orange-50"
                     >
-                    Pause
+                    Mettre en Pause et Quitter
                 </Button>
             )}
             <Button
