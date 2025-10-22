@@ -52,9 +52,7 @@ function useRemoteStorage<T>({ initialValue, endpoint }: UseRemoteStorageOptions
     if (authToken) {
       fetchData();
     } else {
-      setData(initialValue); // Reset to initial value if not authenticated
       setLoading(false);
-      // setError("Utilisateur non authentifié. Impossible de charger les données."); // Optional: set an error
     }
   }, [endpoint, authToken]); // Removed initialValue from dependencies to prevent potential infinite loops
 
