@@ -53,6 +53,7 @@ const ActiveWorkout = () => {
   const [activeWorkout, setActiveWorkout] = useState<ActiveWorkoutType | null>(null);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [showConfirmNewWorkoutDialog, setShowConfirmNewWorkoutDialog] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
   const [historicalRefs, setHistoricalRefs] = useState<Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>>(new Map());
@@ -266,6 +267,7 @@ const ActiveWorkout = () => {
         toast.error("Complétez au moins une série avant de terminer la séance");
         return;
       }
+      setIsFinishing(true);
 
       const completedWorkout = finishWorkout(activeWorkout); // This is a WorkoutHistory object
 
@@ -319,6 +321,7 @@ const ActiveWorkout = () => {
             }
           } catch (e) { /* Ignore if response is not JSON */ }
           toast.error(`Erreur serveur: ${errorMsg}`);
+          setIsFinishing(false);
           return; 
         }
         
@@ -332,6 +335,7 @@ const ActiveWorkout = () => {
         console.error("Failed to save workout history:", error);
         const message = error instanceof Error ? error.message : "Erreur inconnue";
         toast.error(`Échec de l'enregistrement de l'historique: ${message}. Vérifiez votre connexion.`);
+        setIsFinishing(false);
       }
     }
   };
@@ -461,9 +465,9 @@ const ActiveWorkout = () => {
             <Button
               onClick={handleFinishWorkout}
               className="bg-green-600 hover:bg-green-700"
-              disabled={activeWorkout?.isPaused} // Also disable here if paused
+              disabled={activeWorkout?.isPaused || isFinishing} // Also disable here if paused
             >
-              Terminer et enregistrer
+              {isFinishing ? "Enregistrement..." : "Terminer et enregistrer"}
             </Button>
           </DialogFooter>
         </DialogContent>
