@@ -32,7 +32,12 @@ const serializeWorkoutDates = (workout: ActiveWorkout): any => {
   // Create a shallow copy for modification, deep copy exercises separately if needed.
   // JSON.parse(JSON.stringify(workout)) is safe but can be slow for large objects.
   // We only modify top-level date properties here.
-  const serializableWorkout = { ...workout };
+  const serializableWorkout = { ...workout } as any;
+
+  // Explicitly handle historicalRefs Map serialization
+  if (workout.historicalRefs instanceof Map) {
+    serializableWorkout.historicalRefs = Array.from(workout.historicalRefs.entries());
+  }
 
   serializableWorkout.startedAt = safeDateToISOString(workout.startedAt) as any; // Cast to any for assignment
   serializableWorkout.pausedAt = workout.pausedAt ? safeDateToISOString(workout.pausedAt) : undefined;
@@ -68,6 +73,20 @@ const deserializeWorkoutDates = (parsedWorkout: any): ActiveWorkout => {
   workoutWithDates.pausedAt = safeISOStringToDate(parsedWorkout.pausedAt);
   workoutWithDates.createdAt = safeISOStringToDate(parsedWorkout.createdAt) as Date; // Expect createdAt to be valid
   workoutWithDates.updatedAt = safeISOStringToDate(parsedWorkout.updatedAt) as Date; // Expect updatedAt to be valid
+
+  // Explicitly handle historicalRefs Map deserialization
+  if (parsedWorkout.historicalRefs && Array.isArray(parsedWorkout.historicalRefs)) {
+    try {
+      workoutWithDates.historicalRefs = new Map(parsedWorkout.historicalRefs);
+    } catch (e) {
+      console.error("Failed to deserialize historicalRefs into a Map:", e);
+      // Initialize with an empty map or handle error as appropriate
+      workoutWithDates.historicalRefs = new Map();
+    }
+  } else {
+    // If it's not in the expected array format, initialize as an empty Map.
+    workoutWithDates.historicalRefs = new Map();
+  }
 
   // Ensure exercises and sets are correctly typed after parsing
   // And ensure they are actually present on parsedWorkout
