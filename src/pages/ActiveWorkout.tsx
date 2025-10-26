@@ -194,7 +194,8 @@ const ActiveWorkout = () => {
         setActiveWorkout(activeWorkoutData);
       }
       if (activeWorkoutData.historicalRefs) {
-        setHistoricalRefs(new Map(activeWorkoutData.historicalRefs));
+        console.log('Restored historicalRefs from localStorage:', activeWorkoutData.historicalRefs);
+        setHistoricalRefs(activeWorkoutData.historicalRefs);
         setIsHistoryLoaded(true);
       }
       if (activeWorkoutData.isPaused && activeWorkoutData.elapsedTimeBeforePause) {
