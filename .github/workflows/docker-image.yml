@@ -55,9 +55,6 @@ jobs:
               git pull --rebase || true
             fi
 
-            # Rebuild des services (ici front + back)
-            docker compose build --no-cache muscu-front muscu-app-back
-
             # Redéploiement
             docker compose up -d muscu-front muscu-app-back --build
 
