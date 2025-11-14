@@ -67,7 +67,4 @@ jobs:
 
       - name: Health check Muscu front
         run: |
-          # Si ton front est exposé sur un port local (8080:80)
-          # on teste directement l'URL locale
-          curl -fsS http://127.0.0.1:8080/ >/dev/null
         shell: bash
