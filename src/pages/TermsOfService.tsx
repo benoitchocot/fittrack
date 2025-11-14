@@ -24,23 +24,8 @@ const TermsOfService: React.FC = () => {
           </h2>
           <p>
             FitTrack est une application mobile et web gratuite conçue pour vous
-            aider à suivre vos entraînements sportifs et à gérer votre
-            nutrition. Elle permet aux utilisateurs de créer et d'enregistrer
-            des modèles de séances d'entraînement, de suivre leurs apports
-            nutritionnels et de consulter leur historique personnel. Les
-            informations relatives aux nutriments et calories des aliments
-            proviennent de la base de données publique Ciqual de l'ANSES (Agence
-            Nationale de Sécurité Sanitaire de l'Alimentation, de
-            l'Environnement et du Travail), disponible sur{" "}
-            <a
-              href="https://ciqual.anses.fr/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              ciqual.anses.fr
-            </a>
-            .
+            aider à suivre vos entraînements sportifs. Elle permet aux utilisateurs de créer et d'enregistrer
+            des modèles de séances d'entraînement et de consulter leur historique personnel.
           </p>
 
           <h2 className="text-2xl font-semibold mt-6 mb-3">
@@ -62,7 +47,7 @@ const TermsOfService: React.FC = () => {
           <p>
             FitTrack s'engage à respecter la confidentialité de vos données
             personnelles. Les données que vous renseignez (informations
-            d'entraînement, apports nutritionnels) sont stockées dans notre base
+            d'entraînement) sont stockées dans notre base
             de données. Ces informations sont strictement privées et ne sont
             accessibles qu'à vous. Il n'existe aucune fonctionnalité de contact
             ou de partage d'informations entre les utilisateurs au sein de
@@ -80,8 +65,7 @@ const TermsOfService: React.FC = () => {
           </h2>
           <p>
             FitTrack est un outil de suivi et d'information. Toutes les
-            informations fournies au sein de l'Application (données
-            nutritionnelles de Ciqual, suivi d'entraînement) sont données à
+            informations fournies au sein de l'Application (suivi d'entraînement) sont données à
             titre purement indicatif. FitTrack ne fournit aucun conseil médical,
             diététique ou sportif personnalisé. Vous êtes seul responsable de
             l'utilisation que vous faites de ces informations et des
@@ -115,8 +99,7 @@ const TermsOfService: React.FC = () => {
             </a>
           </p>
           <p>
-            Les contenus générés par les utilisateurs (modèles de séances,
-            données nutritionnelles) restent leur propriété exclusive.
+            Les contenus générés par les utilisateurs (modèles de séances) restent leur propriété exclusive.
             Cependant, en les saisissant dans l'Application, vous nous accordez
             une licence non exclusive, mondiale, gratuite pour les héberger et
             les utiliser aux seules fins de vous fournir le service.

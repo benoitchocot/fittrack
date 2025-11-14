@@ -99,7 +99,7 @@ const ProfilePage: React.FC = () => {
                 <CardHeader>
                     <CardTitle>Exportation des données</CardTitle>
                     <CardDescription>
-                        Téléchargez toutes vos données personnelles, y compris les modèles d’entraînement, l’historique et les journaux de nutrition, dans un seul fichier JSON.
+                        Téléchargez toutes vos données personnelles, y compris les modèles d’entraînement et l’historique, dans un seul fichier JSON.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

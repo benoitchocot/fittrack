@@ -44,15 +44,6 @@ router.get('/export', authMiddleware, async (req, res) => {
         exportData.templates = templates;
         console.log(`[GET /data/export] Exported ${templates.length} templates for user ${userId}`);
 
-        // 2. Fetch Daily Nutrition Logs and their children
-        const nutritionLogs = await runQuery("SELECT * FROM daily_nutrition_logs WHERE userId = ?", [userId]);
-        for (const log of nutritionLogs) {
-            const foodItems = await runQuery("SELECT * FROM logged_food_items WHERE log_id = ?", [log.id]);
-            log.items = foodItems;
-        }
-        exportData.daily_nutrition_logs = nutritionLogs;
-        console.log(`[GET /data/export] Exported ${nutritionLogs.length} nutrition logs for user ${userId}`);
-
         // 3. Fetch Workout History
         const history = await runQuery("SELECT * FROM history WHERE userId = ?", [userId]);
         exportData.history = history;
@@ -85,7 +76,7 @@ router.post('/import', authMiddleware, async (req, res) => {
         return res.status(400).json({ error: "Invalid import data format." });
     }
 
-    const { templates = [], daily_nutrition_logs = [], history = [], scan_history = [] } = data;
+    const { templates = [], history = [], scan_history = [] } = data;
 
     try {
         await runExec("BEGIN TRANSACTION");
@@ -93,11 +84,9 @@ router.post('/import', authMiddleware, async (req, res) => {
 
         // 1. Delete existing user data in reverse order of dependency
         console.log(`[POST /data/import] Deleting existing data for user ${userId}.`);
-        await runExec("DELETE FROM logged_food_items WHERE log_id IN (SELECT id FROM daily_nutrition_logs WHERE userId = ?)", [userId]);
         await runExec("DELETE FROM exercise_sets WHERE template_named_exercise_id IN (SELECT id FROM template_named_exercises WHERE template_id IN (SELECT id FROM templates WHERE userId = ?))", [userId]);
         await runExec("DELETE FROM template_named_exercises WHERE template_id IN (SELECT id FROM templates WHERE userId = ?)", [userId]);
         await runExec("DELETE FROM templates WHERE userId = ?", [userId]);
-        await runExec("DELETE FROM daily_nutrition_logs WHERE userId = ?", [userId]);
         await runExec("DELETE FROM history WHERE userId = ?", [userId]);
         await runExec("DELETE FROM scan_history WHERE user_id = ?", [userId]);
         console.log(`[POST /data/import] Finished deleting data for user ${userId}.`);
@@ -122,18 +111,6 @@ router.post('/import', authMiddleware, async (req, res) => {
             }
         }
         console.log(`[POST /data/import] Imported ${templates.length} templates.`);
-
-        // Import Nutrition Logs
-        for (const log of daily_nutrition_logs) {
-            const { id: oldLogId, date, protein, fiber, calories, lipids, glucides, comment, items = [] } = log;
-            const logResult = await runExec("INSERT INTO daily_nutrition_logs (userId, date, protein, fiber, calories, lipids, glucides, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [userId, date, protein, fiber, calories, lipids, glucides, comment]);
-            const newLogId = logResult.lastID;
-
-            for (const item of items) {
-                await runExec("INSERT INTO logged_food_items (log_id, name, weight, protein, carbs, lipids, calories, fiber) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [newLogId, item.name, item.weight, item.protein, item.carbs, item.lipids, item.calories, item.fiber]);
-            }
-        }
-        console.log(`[POST /data/import] Imported ${daily_nutrition_logs.length} nutrition logs.`);
 
         // Import History
         for (const record of history) {

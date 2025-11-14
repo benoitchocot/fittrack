@@ -5,7 +5,6 @@ const bodyParser = require("body-parser");
 const templatesRoutes = require("./routes/templates");
 const historyRoutes = require("./routes/history");
 const authRoutes = require("./routes/auth");
-const nutritionRoutes = require("./routes/nutrition");
 // const scanRoutes = require("./routes/scan");
 const dataRoutes = require("./routes/data");
 
@@ -35,7 +34,6 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use("/templates", templatesRoutes);
 app.use("/history", historyRoutes);
 app.use("/auth", authRoutes);
-app.use("/nutrition", nutritionRoutes);
 // app.use("/scan", scanRoutes);
 app.use("/data", dataRoutes);
 

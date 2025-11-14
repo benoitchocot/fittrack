@@ -121,22 +121,6 @@ db.serialize(() => {
   //   }
   // });
 
-  // Daily Nutrition Logs
-  db.run(`
-    CREATE TABLE IF NOT EXISTS daily_nutrition_logs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userId INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      protein REAL DEFAULT 0,
-      fiber REAL DEFAULT 0,
-      calories REAL DEFAULT 0,
-      lipids REAL DEFAULT 0,
-      glucides REAL DEFAULT 0,
-      comment TEXT,
-      FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
-    )
-  `);
-
   db.run(`
       CREATE TABLE IF NOT EXISTS scan_history (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -153,44 +137,6 @@ db.serialize(() => {
       FOREIGN KEY (user_id) REFERENCES users (id)
       )`
   );
-
-  // Logged Food Items (details for each daily_nutrition_logs entry)
-  db.run(`
-    CREATE TABLE IF NOT EXISTS logged_food_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      log_id INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      weight REAL NOT NULL,
-      protein REAL NOT NULL,
-      carbs REAL NOT NULL,
-      lipids REAL NOT NULL,
-      calories REAL NOT NULL,
-      fiber REAL NOT NULL,
-      FOREIGN KEY(log_id) REFERENCES daily_nutrition_logs(id) ON DELETE CASCADE
-    )
-  `);
-});
-// Add comment column to daily_nutrition_logs table if it doesn't exist
-db.run("ALTER TABLE daily_nutrition_logs ADD COLUMN comment TEXT", (err) => {
-  if (err) {
-    // Check if the error is because the column already exists
-    if (err.message.includes("duplicate column name")) {
-      // This is expected if the column was already added manually or by a previous run
-      console.log(
-        "Column 'comment' already exists in 'daily_nutrition_logs' table."
-      );
-    } else {
-      // For other errors, log them
-      console.error(
-        "Error adding 'comment' column to 'daily_nutrition_logs' table:",
-        err.message
-      );
-    }
-  } else {
-    console.log(
-      "Column 'comment' added to 'daily_nutrition_logs' table or already existed if no error."
-    );
-  }
 });
 
 module.exports = db;

@@ -39,9 +39,6 @@ const NavBar = () => {
               <NavLink href="/" current={location.pathname === '/'}>
                 Home
               </NavLink>
-              <NavLink href="/nutrition" current={location.pathname === '/nutrition'}>
-                Nutrition
-              </NavLink>
               {/* <NavLink href="/scan" current={location.pathname === '/scan'}>
                 Scan
               </NavLink> */}
@@ -96,9 +93,6 @@ const NavBar = () => {
               <>
                 <NavLink href="/" current={location.pathname === '/'} mobile onClick={closeMobileMenu}>
                   Home
-                </NavLink>
-                <NavLink href="/nutrition" current={location.pathname === '/nutrition'} mobile onClick={closeMobileMenu}>
-                  Nutrition
                 </NavLink>
                 {/* <NavLink href="/scan" current={location.pathname === '/scan'} mobile onClick={closeMobileMenu}>
                   Scan
