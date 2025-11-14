@@ -1,0 +1,73 @@
+name: Deploy Muscu (LAN)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          printf "%s\n" "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Debug SSH_HOST
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          if [ -z "${SSH_HOST}" ]; then
+            echo "SSH_HOST is empty"; exit 1
+          fi
+          echo "SSH_HOST length: ${#SSH_HOST}"
+
+      - name: Deploy Muscu stack over SSH
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT || 22 }}
+        run: |
+          ssh -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=yes \
+              -o PasswordAuthentication=no \
+              "$SSH_USER@$SSH_HOST" << 'EOF'
+            set -e
+
+            # Aller dans le dossier où se trouve le docker-compose du projet muscu
+            cd ~/pi  # ⬅️ adapte si ton projet est ailleurs
+
+            # Optionnel: si ce dossier est un clone git, on met à jour le code
+            if [ -d .git ]; then
+              git fetch --all || true
+              git checkout main || true
+              git pull --rebase || true
+            fi
+
+            # Rebuild des services (ici front + back)
+            docker compose build --no-cache muscu-front muscu-app-back
+
+            # Redéploiement
+            docker compose up -d muscu-front muscu-app-back --build
+
+            # Nettoyage des anciennes images
+            docker image prune -f
+          EOF
+
+      - name: Health check Muscu front
+        run: |
+          # Si ton front est exposé sur un port local (8080:80)
+          # on teste directement l'URL locale
+          curl -fsS http://127.0.0.1:8080/ >/dev/null
+        shell: bash
