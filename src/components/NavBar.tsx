@@ -1,3 +1,6 @@
+// Navigation bar component for the FitTrack app.
+// Displays app title, navigation links (home, profile, contact, terms), and authentication controls.
+// Handles mobile menu toggle based on screen size and user auth state.
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";

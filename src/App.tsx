@@ -1,3 +1,7 @@
+// Main React component for the FitTrack application.
+// Sets up providers for queries (TanStack Query), tooltips, notifications (Toaster/Sonner),
+// authentication (AuthProvider), and routing with React Router.
+// Defines all application routes and requires authentication for most pages.
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";

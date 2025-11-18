@@ -1,3 +1,6 @@
+// Main Express server file for the FitTrack backend API.
+// Handles routes for authentication, templates, history, scan, and data.
+// Configures CORS for allowed origins, body parsing, and serves on port 3001.
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");

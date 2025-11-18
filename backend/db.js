@@ -1,3 +1,6 @@
+// Database configuration file for FitTrack.
+// Sets up SQLite database connection and creates tables for users, exercises, templates, history, and more.
+// Handles table creation and schema definitions.
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 
