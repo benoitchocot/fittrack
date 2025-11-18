@@ -46,7 +46,7 @@ jobs:
             set -e
 
             # Aller dans le dossier où se trouve le docker-compose du projet muscu
-            cd ~/pi  # ⬅️ adapte si ton projet est ailleurs
+            cd ~/fittrack  # ⬅️ adapte si ton projet est ailleurs
 
             # Optionnel: si ce dossier est un clone git, on met à jour le code
             if [ -d .git ]; then
@@ -54,6 +54,8 @@ jobs:
               git checkout main || true
               git pull --rebase || true
             fi
+
+            cd ~/pi 
 
             # Build propre des services (sans cache)
             docker compose build --no-cache muscu-front muscu-app-back
