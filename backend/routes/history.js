@@ -19,11 +19,8 @@ const historyEntries = rows.map(row => {
   if (row.workout_details) {
     try {
       workoutDetails = JSON.parse(row.workout_details);
-      console.log("GET /history - Parsed workout_details:", JSON.stringify(workoutDetails, null, 2));
     } catch (parseErr) {
-      console.error("JSON Parse Error (Get History):", parseErr.message);
       // Laisser workoutDetails à null si le parsing échoue
-      console.log("GET /history - Failed to parse workout_details for row id:", row.id);
     }
   }
         return {
@@ -51,9 +48,7 @@ router.post("/", authMiddleware, (req, res) => {
 
   const actionSummary = `Séance '${completedWorkoutDetails.name}' terminée le ${new Date(completedWorkoutDetails.finishedAt).toLocaleDateString("fr-FR", { year: 'numeric', month: 'long', day: 'numeric' })}`;
   
-  console.log("POST /history - Received completedWorkoutDetails:", JSON.stringify(completedWorkoutDetails, null, 2));
-  const workoutDetailsJson = JSON.stringify(completedWorkoutDetails); 
-  console.log("POST /history - Storing workoutDetailsJson:", workoutDetailsJson);
+  const workoutDetailsJson = JSON.stringify(completedWorkoutDetails);
 
   const stmt = db.prepare(
     "INSERT INTO history (userId, action, createdAt, workout_details) VALUES (?, ?, datetime('now'), ?)"
@@ -64,10 +59,37 @@ router.post("/", authMiddleware, (req, res) => {
       console.error("DB Error (Insert History):", err.message);
       return res.status(500).json({ error: "Erreur base de données lors de l'enregistrement de l'historique." });
     }
-    console.log("POST /history - Successfully inserted history entry with ID:", this.lastID);
     res.status(201).json({ success: true, id: this.lastID });
   });
   stmt.finalize();
+});
+
+// Get last workout for a specific template name
+router.get("/last/:templateName", authMiddleware, (req, res) => {
+  const templateName = decodeURIComponent(req.params.templateName);
+
+  db.get(
+    "SELECT workout_details FROM history WHERE userId = ? AND json_extract(workout_details, '$.name') = ? ORDER BY createdAt DESC LIMIT 1",
+    [req.user.userId, templateName],
+    (err, row) => {
+      if (err) {
+        console.error("DB Error (Get Last Workout):", err.message);
+        return res.status(500).json({ error: "Erreur base de données." });
+      }
+
+      if (!row || !row.workout_details) {
+        return res.json(null); // No last workout found
+      }
+
+      try {
+        const workout = JSON.parse(row.workout_details);
+        res.json(workout);
+      } catch (parseErr) {
+        console.error("JSON Parse Error:", parseErr.message);
+        res.status(500).json({ error: "Erreur de données." });
+      }
+    }
+  );
 });
 
 module.exports = router;

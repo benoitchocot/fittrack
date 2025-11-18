@@ -1,5 +1,7 @@
 
 import { Exercise, Set, WorkoutTemplate, ActiveWorkout, WorkoutHistory } from '@/types/workout';
+import { getToken } from '@/utils/auth';
+import BASE_URL from '@/config';
 
 // Utility functions to generate IDs
 const generateId = () => Date.now().toString();
@@ -148,4 +150,21 @@ export const removeExercise = (
     exercises: workout.exercises.filter((exercise) => exercise.id !== exerciseId),
     updatedAt: new Date(),
   };
+};
+
+export const getLastWorkoutByName = async (templateName: string): Promise<WorkoutHistory | null> => {
+  const token = getToken();
+  if (!token) throw new Error("No token");
+
+  const response = await fetch(`${BASE_URL}history/last/${encodeURIComponent(templateName)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 404 || (response.status === 200 && !response.ok)) return null;
+  if (!response.ok) throw new Error("Failed to fetch last workout");
+
+  const data = await response.json();
+  return data;
 };

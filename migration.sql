@@ -7,33 +7,6 @@ CREATE TABLE "User" (
     "password" TEXT
 );
 
--- CreateTable
-CREATE TABLE "DailyNutritionLog" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "userId" INTEGER,
-    "date" TEXT,
-    "protein" REAL,
-    "fiber" REAL,
-    "calories" REAL,
-    "lipids" REAL,
-    "glucides" REAL,
-    "comment" TEXT,
-    CONSTRAINT "DailyNutritionLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "LoggedFoodItem" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "logId" INTEGER NOT NULL,
-    "name" TEXT NOT NULL,
-    "weight" REAL NOT NULL,
-    "protein" REAL NOT NULL,
-    "carbs" REAL NOT NULL,
-    "lipids" REAL NOT NULL,
-    "calories" REAL NOT NULL,
-    "fiber" REAL NOT NULL,
-    CONSTRAINT "LoggedFoodItem_logId_fkey" FOREIGN KEY ("logId") REFERENCES "DailyNutritionLog" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
 
 -- CreateTable
 CREATE TABLE "History" (

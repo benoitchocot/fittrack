@@ -55,13 +55,16 @@ jobs:
               git pull --rebase || true
             fi
 
-            # Redéploiement
-            docker compose up -d muscu-front muscu-app-back --build
+            # Build propre des services (sans cache)
+            docker compose build --no-cache muscu-front muscu-app-back
 
-            # Nettoyage des anciennes images
+            # Recréation forcée des conteneurs avec les nouvelles images
+            docker compose up -d --force-recreate --remove-orphans muscu-front muscu-app-back
+
+            # Nettoyage des anciennes images (optionnel)
             docker image prune -f
           EOF
-
       - name: Health check Muscu front
         run: |
         shell: bash
+
