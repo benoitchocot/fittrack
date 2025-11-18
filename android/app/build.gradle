@@ -1,6 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
+    tasks.withType(JavaCompile).configureEach {
+    // force Gradle à utiliser le niveau 17 sans --release 21
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
     namespace "com.fittrack.app"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
