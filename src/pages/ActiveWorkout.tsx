@@ -14,12 +14,13 @@ import useRemoteStorage from "@/hooks/useRemoteStorage";
 import { getToken } from "@/utils/auth";
 import { WorkoutTemplate, ActiveWorkout as ActiveWorkoutType, Exercise, Set as ExerciseSet, WorkoutHistory } from "@/types/workout"; // Ensure Set is imported, aliasing if necessary e.g. as ExerciseSet
 import { getActiveWorkout, saveActiveWorkout, clearActiveWorkout } from "@/utils/activeWorkoutStorage";
-import { ArrowLeft, CheckCircle2, Play, Pause, PlusCircle } from "lucide-react"; // Added Play and Pause icons
+import { ArrowLeft, CheckCircle2, Play, Pause, PlusCircle, History } from "lucide-react"; // Added Play and Pause icons and History
 import {
   startWorkout,
   updateExercise,
   finishWorkout,
-  getLastCompletedSetsForExercise, 
+  getLastCompletedSetsForExercise,
+  getLastWorkoutByName,
 } from "@/services/workoutService";
 import { toast } from "sonner";
 import BASE_URL from "@/config"; // Assuming BASE_URL is defined in config
@@ -58,23 +59,25 @@ const ActiveWorkout = () => {
   const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
   const [historicalRefs, setHistoricalRefs] = useState<Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>>(new Map());
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
+  const [lastWorkoutModalOpen, setLastWorkoutModalOpen] = useState(false);
+  const [lastWorkout, setLastWorkout] = useState<any | null>(null);
 
 
 
-  // Effect for processing historical references
-  useEffect(() => {
-    if (activeWorkout && activeWorkout.id && !loadingHistory && history && !isHistoryLoaded) {
-      const newRefs = new Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>();
-      for (const exercise of activeWorkout.exercises) {
-        const refDataArray = getLastCompletedSetsForExercise(exercise.name, history);
-        newRefs.set(exercise.id, refDataArray);
-      }
-      setHistoricalRefs(newRefs);
-      setIsHistoryLoaded(true);
-    } else if ((!id || !activeWorkout) && historicalRefs.size > 0) {
-      setHistoricalRefs(new Map());
-    }
-  }, [activeWorkout, history, loadingHistory, id, isHistoryLoaded]);
+  // Historical references disabled: using modal instead
+  // useEffect(() => {
+  //   if (activeWorkout && activeWorkout.id && !loadingHistory && history && !isHistoryLoaded) {
+  //     const newRefs = new Map<string, Array<{ weight: number | null; reps: number | null; } | null> | null>();
+  //     for (const exercise of activeWorkout.exercises) {
+  //       const refDataArray = getLastCompletedSetsForExercise(exercise.name, history);
+  //       newRefs.set(exercise.id, refDataArray);
+  //     }
+  //     setHistoricalRefs(newRefs);
+  //     setIsHistoryLoaded(true);
+  //   } else if ((!id || !activeWorkout) && historicalRefs.size > 0) {
+  //     setHistoricalRefs(new Map());
+  //   }
+  // }, [activeWorkout, history, loadingHistory, id, isHistoryLoaded]);
 
   // Auto-save workout state to localStorage
   useEffect(() => {
@@ -194,7 +197,6 @@ const ActiveWorkout = () => {
         setActiveWorkout(activeWorkoutData);
       }
       if (activeWorkoutData.historicalRefs) {
-        console.log('Restored historicalRefs from localStorage:', activeWorkoutData.historicalRefs);
         setHistoricalRefs(activeWorkoutData.historicalRefs);
         setIsHistoryLoaded(true);
       }
@@ -272,35 +274,9 @@ const ActiveWorkout = () => {
 
       const completedWorkout = finishWorkout(activeWorkout); // This is a WorkoutHistory object
 
-      // Add this log:
-      console.log('Submitting to POST /history:', JSON.stringify(completedWorkout, null, 2));
-      console.log('Breakdown of completedWorkout for POST /history:');
-      console.log('- ID (frontend generated for history entry):', completedWorkout.id);
-      console.log('- WorkoutID (original template ID):', completedWorkout.workoutId);
-      console.log('- Name:', completedWorkout.name);
-      console.log('- StartedAt:', completedWorkout.startedAt, '(isDate:', completedWorkout.startedAt instanceof Date, ')');
-      console.log('- FinishedAt:', completedWorkout.finishedAt, '(isDate:', completedWorkout.finishedAt instanceof Date, ')');
-      console.log('- Exercises count:', completedWorkout.exercises ? completedWorkout.exercises.length : 'undefined');
-      if (completedWorkout.exercises && completedWorkout.exercises.length > 0) {
-        completedWorkout.exercises.forEach((ex, index) => {
-          console.log(`  - Exercise ${index}: ID=${ex.id}, Name=${ex.name}, Sets count=${ex.sets ? ex.sets.length : 'undefined'}`);
-          if (ex.sets && ex.sets.length > 0) {
-            ex.sets.forEach((set, sIndex) => {
-              console.log(`    - Set ${sIndex}: ID=${set.id}, Weight=${set.weight}, Reps=${set.reps}, Completed=${set.completed}`);
-            });
-          }
-        });
-      }
+
 
       try {
-        // N.B: The token is now handled by the useRemoteStorage hook or directly in fetch calls if not using the hook.
-        // For this specific POST request, since we are not using the saveData function from useRemoteStorage,
-        // we would need to ensure getToken() is called here if direct fetch is maintained.
-        // However, the instruction is to modify useRemoteStorage usage. This part of the code
-        // is not using useRemoteStorage for the POST, so it's outside the current scope of changes
-        // for useRemoteStorage. But if it were to be refactored to use saveData, token would be handled.
-      // apiFetch will handle Authorization header and token.
-      // It will also throw an error for 401, which will be caught below.
       const response = await apiFetch(`${BASE_URL}history`, {
           method: "POST",
         // apiFetch will set Content-Type: application/json if body is an object.
@@ -347,6 +323,17 @@ const ActiveWorkout = () => {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const handleOpenLastWorkoutModal = async () => {
+    if (!activeWorkout) return;
+    try {
+      const workout = await getLastWorkoutByName(activeWorkout.name);
+      setLastWorkout(workout);
+      setLastWorkoutModalOpen(true);
+    } catch (error) {
+      toast.error("Impossible de récupérer la dernière séance");
+    }
+  };
+
   if (loadingTemplates || loadingHistory) return <p>Chargement...</p>;
   if (!activeWorkout) return null;
 
@@ -375,6 +362,15 @@ const ActiveWorkout = () => {
               <div className="text-lg font-bold">
                 {activeWorkout.isPaused ? formatTime(activeWorkout.elapsedTimeBeforePause || 0) : formatTime(elapsedTime)}
               </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenLastWorkoutModal}
+              className="mt-2"
+            >
+              <History className="w-4 h-4 mr-2" />
+              Dernière séance
+            </Button>
           </div>
         </div>
 
@@ -522,6 +518,69 @@ const ActiveWorkout = () => {
             >
               Commencer une nouvelle séance
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Last Workout Modal */}
+      <Dialog open={lastWorkoutModalOpen} onOpenChange={setLastWorkoutModalOpen}>
+        <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Dernière séance</DialogTitle>
+            <DialogDescription>
+              Résumé de votre dernière séance "{activeWorkout?.name}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {lastWorkout ? (
+              <>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {lastWorkout.startedAt && (
+                    <p>Date: {new Date(lastWorkout.startedAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                  )}
+                  {lastWorkout.finishedAt && lastWorkout.startedAt && (
+                    <p>Durée: {formatTime(Math.floor((new Date(lastWorkout.finishedAt).getTime() - new Date(lastWorkout.startedAt).getTime()) / 1000))}</p>
+                  )}
+                </div>
+                <h3 className="text-xl font-semibold">Exercices</h3>
+                <div className="space-y-4">
+                  {lastWorkout.exercises?.map((exercise, index) => (
+                    <div key={exercise.id || index} className="p-4 bg-white rounded-lg shadow dark:bg-zinc-800">
+                      <h4 className="text-lg font-semibold mb-2">{exercise.name}</h4>
+                      {exercise.comment && (
+                        <p className="mb-3 text-sm text-gray-600 dark:text-gray-400 italic">
+                          Commentaire: {exercise.comment}
+                        </p>
+                      )}
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2 mb-1 text-xs font-medium text-muted-foreground px-2">
+                          <span>Série</span>
+                          <span>Performance</span>
+                          <span className="text-right">Statut</span>
+                        </div>
+                        {exercise.sets.map((set, setIndex) => (
+                          <div key={set.id || setIndex} className="flex justify-between items-center p-2 rounded bg-gray-50 dark:bg-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-600 transition-colors">
+                            <span className="text-sm font-medium w-1/3">Série {setIndex + 1}</span>
+                            <span className="text-sm w-1/3 text-center">
+                              {set.weight ? `${set.weight} kg x ` : ""}
+                              {set.reps ?? 0} reps
+                            </span>
+                            <span className={`text-sm font-medium w-1/3 text-right ${set.completed ? 'text-green-500' : 'text-red-500'}`}>
+                              {set.completed ? 'Terminé' : 'Non terminé'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p>Aucune séance précédente trouvée.</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setLastWorkoutModalOpen(false)}>Fermer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

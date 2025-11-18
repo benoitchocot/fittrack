@@ -34,14 +34,21 @@ FitTrack is a gym workout tracking application with a React TypeScript frontend 
 
 ## How to Run the Application
 
-### Development
-1. Install dependencies: `npm install` (root and backend/)
-2. Start backend: `cd backend && npm start`
-3. Start frontend: `npm run dev`
-4. Frontend at localhost:8080, backend at localhost:3001
+### Development (with npm)
+1. Create `.env.development` with `VITE_BASE_URL=http://localhost:3001/`
+2. Install dependencies: `npm install` (root and backend/)
+3. Start backend: `cd backend && npm start`
+4. Start frontend: `npm run dev`
+5. Frontend at localhost:5173, backend at localhost:3001/
+
+### Docker Compose (with nginx proxy)
+1. In production, set `VITE_BASE_URL=https://apimuscu.chocot.be/`
+2. Run: `docker-compose up --build`
+3. Frontend at localhost:8080, backend proxied at localhost:3001/ directly
 
 ### Production
-- Use Docker: `docker-compose up`
+- Docker build with env var `VITE_BASE_URL=https://apimuscu.chocot.be/`
+- Works via nginx proxy.
 
 ## Editing the Frontend
 
@@ -113,6 +120,14 @@ FitTrack is a gym workout tracking application with a React TypeScript frontend 
 
 CI/CD with GitHub Actions in `.github/workflows/deploy.yml`
 Builds and pushes Docker images to production.
+Set environment variable `VITE_BASE_URL=https://apimuscu.chocot.be` in the build process.
+
+## Database Access
+
+The app uses SQLite stored in `/backend/data/data.sqlite3`.
+- In development: Access directly in `backend/data/data.sqlite3`
+- In Docker: Copy to local: `docker cp muscu-app-back:/app/data/data.sqlite3 ./local_db.sqlite3`
+- View/edit with DB Browser for SQLite (free cross-platform tool) or sqlite3 CLI.
 
 ## Best Practices
 
