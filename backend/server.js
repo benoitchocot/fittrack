@@ -14,7 +14,7 @@ const dataRoutes = require("./routes/data");
 const app = express();
 const PORT = 3001;
 
-const allowedOrigins = ['https://muscu.chocot.be', "http://localhost:8080"]
+const allowedOrigins = ['https://muscu.chocot.be', "http://localhost:8080", "capacitor://com.fittrack.app"]
 
 app.use(cors({
   origin: function (origin, callback) {
