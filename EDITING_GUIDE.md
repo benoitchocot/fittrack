@@ -129,6 +129,45 @@ The app uses SQLite stored in `/backend/data/data.sqlite3`.
 - In Docker: Copy to local: `docker cp muscu-app-back:/app/data/data.sqlite3 ./local_db.sqlite3`
 - View/edit with DB Browser for SQLite (free cross-platform tool) or sqlite3 CLI.
 
+## Building APK for Android
+
+The app is set up with Capacitor to build a native Android APK from the PWA.
+
+### Prerequisites
+- Java JDK (version 11+)
+- Android Studio (for GUI build) or Android SDK CLI tools
+
+### Build Steps
+1. Set production environment:
+   ```bash
+   echo "VITE_BASE_URL=https://apimuscu.chocot.be/" > .env.production.local
+   ```
+
+2. Sync Capacitor:
+   ```bash
+   npm run cap:copy
+   ```
+   This builds the web app and copies files to the Android project.
+
+3. Build APK:
+   ```bash
+   cd android
+   ./gradlew assembleDebug
+   ```
+   The APK will be in `android/app/build/outputs/apk/debug/app-debug.apk`
+
+4. Install and share the APK file on Android devices. Users can side-load it for testing.
+
+### Notes
+- For production release, sign the APK and upload to Google Play.
+- For iOS, you'd need a Mac with Xcode to add the iOS platform (`npx cap add ios`), build, and archive for App Store distribution. This requires Apple's developer program.
+
+### Capacitor Scripts
+- `npm run cap:sync`: Builds and syncs web assets
+- `npm run cap:copy`: Builds and copies web assets to Android
+- `npm run cap:open:android`: Opens project in Android Studio (if installed)
+- `npm run build:apk`: Builds debug APK from android directory
+
 ## Best Practices
 
 - TypeScript: Strong typing for reliability

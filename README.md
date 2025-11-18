@@ -37,6 +37,7 @@ Avant de lancer l'application localement, assurez-vous d'avoir installé :
 - **npm** (fourni avec Node.js)
 - **SQLite3** (utilisé comme base de données locale via `sqlite3` npm package)
 - **Yarn** (facultatif, mais `npm` fonctionne très bien)
+- **Java 21** (facultatif, pour exporter en APK)
 
 
 ### Backend
