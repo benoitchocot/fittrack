@@ -13,9 +13,8 @@ import { Label } from "@/components/ui/label";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-// import { setToken } from "@/utils/auth"; // Supprimé
-import { useAuth } from "@/context/AuthContext"; // Import useAuth
-import BASE_URL from "@/config"; // Assurez-vous que le chemin est correct
+import { useAuth } from "@/context/AuthContext";
+import BASE_URL from "@/config";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -40,10 +39,7 @@ const Login = () => {
         return;
       }
 
-      // setToken(data.token); // Supprimé
-      console.log('[Login.tsx] Token reçu du backend:', data.token);
-      console.log('[Login.tsx] Type du token:', typeof data.token);
-      login(data.token); // Utiliser la fonction login du contexte
+      login(data.token);
       toast.success("Connecté avec succès !");
       navigate("/");
     } catch (error) {

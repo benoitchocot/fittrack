@@ -41,21 +41,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const login = (newToken: string) => {
-    console.log(
-      "[AuthContext] Fonction login appelée avec newToken:",
-      newToken
-    );
-    console.log("[AuthContext] Type de newToken:", typeof newToken);
     if (typeof newToken === "string" && newToken.trim() !== "") {
-      storeToken(newToken); // storeToken est localStorage.setItem("token", newToken)
-      console.log(
-        "[AuthContext] Token stocké dans localStorage. Vérifiez l'onglet Application."
-      );
+      storeToken(newToken);
       setToken(newToken);
       setIsAuthenticated(true);
-      console.log(
-        "[AuthContext] État du contexte mis à jour : isAuthenticated = true"
-      );
     } else {
       console.error(
         "[AuthContext] Tentative de stocker un token invalide (vide ou non-string):",

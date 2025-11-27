@@ -8,7 +8,6 @@ const bodyParser = require("body-parser");
 const templatesRoutes = require("./routes/templates");
 const historyRoutes = require("./routes/history");
 const authRoutes = require("./routes/auth");
-// const scanRoutes = require("./routes/scan");
 const dataRoutes = require("./routes/data");
 
 const app = express();
@@ -44,9 +43,6 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use("/templates", templatesRoutes);
 app.use("/history", historyRoutes);
 app.use("/auth", authRoutes);
-// app.use("/scan", scanRoutes);
 app.use("/data", dataRoutes);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
-});
+app.listen(PORT);

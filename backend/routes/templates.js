@@ -38,29 +38,20 @@ router.post("/", authMiddleware, async (req, res) => {
 
   try {
     await runExec("BEGIN TRANSACTION");
-    console.log(`[POST /templates] Transaction started for user ${userId}.`);
 
     const templateResult = await runExec(
       "INSERT INTO templates (userId, name, description) VALUES (?, ?, ?)",
       [userId, name, description || null]
     );
     const newTemplateId = templateResult.lastID;
-    console.log(`[POST /templates] Created template with ID: ${newTemplateId}`);
 
     let savedExercises = [];
 
     if (Array.isArray(exercisesPayload)) {
       for (const exercise of exercisesPayload) {
         if (!exercise.exercise_name) {
-          console.warn(
-            `[POST /templates] Skipping exercise due to missing name:`,
-            exercise
-          );
           continue;
         }
-        console.log(
-          `[POST /templates] Inserting exercise: ${exercise.exercise_name} for template ID: ${newTemplateId}`
-        );
         const namedExerciseResult = await runExec(
           "INSERT INTO template_named_exercises (template_id, exercise_name, notes, order_num) VALUES (?, ?, ?, ?)", // Removed exerciseType
           [
@@ -72,9 +63,6 @@ router.post("/", authMiddleware, async (req, res) => {
           ]
         );
         const newNamedExerciseId = namedExerciseResult.lastID;
-        console.log(
-          `[POST /templates] Inserted named exercise ID: ${newNamedExerciseId}` // Removed type logging
-        );
 
         let savedSets = [];
         if (Array.isArray(exercise.sets)) {
@@ -83,10 +71,6 @@ router.post("/", authMiddleware, async (req, res) => {
               typeof set.completed === "boolean"
                 ? set.completed
                 : set.completed === "true" || set.completed === 1;
-            console.log(
-              `[POST /templates] Inserting set for named exercise ID ${newNamedExerciseId}:`,
-              set
-            );
             const sql = "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed) VALUES (?, ?, ?, ?, ?)"; // Removed duration
             const params = [
                 newNamedExerciseId,
@@ -121,9 +105,6 @@ router.post("/", authMiddleware, async (req, res) => {
     }
 
     await runExec("COMMIT");
-    console.log(
-      `[POST /templates] Transaction committed for template ID: ${newTemplateId}`
-    );
 
     res.status(201).json({
       id: newTemplateId,
@@ -140,9 +121,6 @@ router.post("/", authMiddleware, async (req, res) => {
     );
     try {
       await runExec("ROLLBACK");
-      console.log(
-        `[POST /templates] Transaction rolled back for user ${userId}.`
-      );
     } catch (rbError) {
       console.error(
         `[POST /templates] Error rolling back transaction for user ${userId}:`,
@@ -263,15 +241,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
   const userId = req.user.userId;
   const { name, description, exercises: exercisesPayload } = req.body; // exercisesPayload is the transformed exercises array from frontend
 
-  console.log(
-    `[PUT /templates/${templateId}] Request received. User ID: ${userId}. Body:`,
-    req.body
-  );
-
   if (!name) {
-    console.log(
-      `[PUT /templates/${templateId}] Validation failed: Name is required.`
-    );
     return res.status(400).json({ error: "Le nom du modèle est requis." });
   }
 
@@ -282,7 +252,6 @@ router.put("/:id", authMiddleware, async (req, res) => {
 
   try {
     await runExec("BEGIN TRANSACTION");
-    console.log(`[PUT /templates/${templateId}] Transaction started.`);
 
     const existingTemplateArray = await runQuery(
       "SELECT id, userId FROM templates WHERE id = ? AND userId = ?",
@@ -290,9 +259,6 @@ router.put("/:id", authMiddleware, async (req, res) => {
     );
 
     if (existingTemplateArray.length === 0) {
-      console.log(
-        `[PUT /templates/${templateId}] Template not found or user ${userId} not authorized. Rolling back.`
-      );
       await runExec("ROLLBACK");
       return res
         .status(404)
@@ -303,7 +269,6 @@ router.put("/:id", authMiddleware, async (req, res) => {
       "UPDATE templates SET name = ?, description = ? WHERE id = ? AND userId = ?",
       [name, description || null, templateId, userId]
     );
-    console.log(`[PUT /templates/${templateId}] Updated 'templates' table.`);
 
     // Delete old exercises and sets associated with this template
     // Assumes ON DELETE CASCADE for 'exercise_sets' linked to 'template_named_exercises'
@@ -311,21 +276,13 @@ router.put("/:id", authMiddleware, async (req, res) => {
       "DELETE FROM template_named_exercises WHERE template_id = ?",
       [templateId]
     );
-    console.log(`[PUT /templates/${templateId}] Deleted old exercises from 'template_named_exercises'.`);
 
     let processedExercises = []; // To store exercises and sets with their new DB IDs for the response
 
     for (const exercise of exercisesToProcess) {
       if (!exercise.exercise_name) {
-        console.warn(
-          `[PUT /templates/${templateId}] Skipping exercise due to missing exercise_name:`,
-          exercise
-        );
         continue;
       }
-      console.log(
-        `[PUT /templates/${templateId}] Processing exercise: ${exercise.exercise_name}`
-      );
       const namedExerciseResult = await runExec(
         "INSERT INTO template_named_exercises (template_id, exercise_name, notes, order_num) VALUES (?, ?, ?, ?)", // Removed exerciseType
         [
@@ -337,9 +294,6 @@ router.put("/:id", authMiddleware, async (req, res) => {
         ]
       );
       const newNamedExerciseId = namedExerciseResult.lastID;
-      console.log(
-        `[PUT /templates/${templateId}] Inserted named exercise ID: ${newNamedExerciseId}` // Removed type logging
-      );
 
       let processedSets = [];
       if (Array.isArray(exercise.sets)) {
@@ -348,11 +302,6 @@ router.put("/:id", authMiddleware, async (req, res) => {
             typeof set.completed === "boolean"
               ? set.completed
               : set.completed === "true" || set.completed === 1;
-          
-          console.log(
-            `[PUT /templates/${templateId}] Inserting set for named exercise ID ${newNamedExerciseId}:`,
-            set
-          );
           const sql = "INSERT INTO exercise_sets (template_named_exercise_id, set_order, kg, reps, completed) VALUES (?, ?, ?, ?, ?)"; // Removed duration
           const params = [
               newNamedExerciseId,
@@ -386,7 +335,6 @@ router.put("/:id", authMiddleware, async (req, res) => {
     }
 
     await runExec("COMMIT");
-    console.log(`[PUT /templates/${templateId}] Transaction committed.`);
 
     res.json({
       id: parseInt(templateId, 10),
@@ -403,7 +351,6 @@ router.put("/:id", authMiddleware, async (req, res) => {
     );
     try {
       await runExec("ROLLBACK");
-      console.log(`[PUT /templates/${templateId}] Transaction rolled back.`);
     } catch (rbError) {
       console.error(
         `[PUT /templates/${templateId}] Error rolling back transaction:`,

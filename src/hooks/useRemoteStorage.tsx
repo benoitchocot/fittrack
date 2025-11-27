@@ -17,7 +17,6 @@ function useRemoteStorage<T>({ initialValue, endpoint }: UseRemoteStorageOptions
     setLoading(true);
     setError(null);
     try {
-      console.log('[useRemoteStorage] Attempting fetch via apiFetch. Endpoint:', endpoint);
       const res = await apiFetch(endpoint);
       if (!res.ok) {
         const errorText = await res.text();
@@ -54,19 +53,15 @@ function useRemoteStorage<T>({ initialValue, endpoint }: UseRemoteStorageOptions
   };
 
   // Fonction pour envoyer des données via POST
-  const postDataToServer = async (itemToPost: any) => { // 'any' for now, could be made generic for a single item
+  const postDataToServer = async (itemToPost: any) => {
     if (!authToken) {
       const authError = new Error("Utilisateur non authentifié. Impossible de sauvegarder les données.");
       setError(authError.message);
-      console.error("Attempted to POST data without authToken.");
       return Promise.reject(authError);
     }
 
-    setError(null); // Clear previous errors before POSTing
+    setError(null);
     try {
-      // authToken is checked before calling postDataToServer.
-      // apiFetch will handle token inclusion and Content-Type for JSON string.
-      console.log('[useRemoteStorage] Attempting POST via apiFetch. Endpoint:', endpoint);
 
       const res = await apiFetch(endpoint, { 
         method: 'POST',

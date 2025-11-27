@@ -31,12 +31,11 @@ export const createWorkoutTemplate = (name: string): WorkoutTemplate => {
 
 export const startWorkout = (template: any): ActiveWorkout => { 
   const transformedExercises = (template.exercises || []).map((ex: any) => {
-    // const currentExerciseType = ex.exerciseType || 'reps'; // No longer needed, always 'reps'
     return {
       id: ex.id || generateId(), 
       name: ex.exercise_name || ex.name || '', 
       comment: ex.notes || ex.comment,        
-      exerciseType: 'reps', // Always 'reps'
+      exerciseType: 'reps',
       order_num: ex.order_num !== undefined ? ex.order_num : 0,
       sets: (ex.sets || []).map((s: any) => ({
         id: s.id || generateId(), 

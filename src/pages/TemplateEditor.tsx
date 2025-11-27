@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import ExerciseForm from "@/components/ExerciseForm";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
-// import { getToken } from "@/utils/auth"; // Supprimer cet import
-import { useAuth } from "@/context/AuthContext"; // Importer useAuth
+import { useAuth } from "@/context/AuthContext";
 import { WorkoutTemplate, Exercise } from "@/types/workout";
 import { Plus, ArrowLeft } from "lucide-react";
 import {
@@ -307,10 +306,6 @@ const TemplateEditor = () => {
         navigate("/");
       } else if (!isEditMode) {
         // Create new template
-        console.log(
-          "Creating new template with payload:",
-          JSON.stringify(payloadWorkout, null, 2)
-        );
         const response = await apiFetch(`${BASE_URL}templates`, {
           method: "POST",
           headers: {

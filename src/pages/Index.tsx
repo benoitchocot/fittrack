@@ -69,19 +69,6 @@ const Index = () => {
   }, [location]);
 
   useEffect(() => {
-    // The history.forEach loop and its console.warn have been removed.
-    // The main console.log for fetched history data is kept.
-    if (history && Array.isArray(history) && history.length > 0) {
-      console.log(
-        "Fetched history data in Index.tsx:",
-        JSON.stringify(history, null, 2)
-      );
-    } else if (history) {
-      console.log(
-        "Fetched history data in Index.tsx (empty or not array):",
-        history
-      );
-    }
   }, [history]);
 
   const formatTime = (seconds: number) => {

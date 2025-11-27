@@ -8,8 +8,6 @@ const dbPath = path.resolve(__dirname, "data", "data.sqlite3");
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error("Erreur lors de l'ouverture de la base :", err);
-  } else {
-    console.log("Base SQLite connectée");
   }
 });
 
@@ -25,19 +23,6 @@ db.serialize(() => {
       password TEXT
     )
   `);
-
-  // Exercises
-  db.run(`
-  CREATE TABLE IF NOT EXISTS exercises (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    kg INTEGER,
-    reps INTEGER,
-    completed BOOLEAN DEFAULT 0,
-    template_id INTEGER,
-    FOREIGN KEY(template_id) REFERENCES templates(id) ON DELETE CASCADE
-  )
-`);
 
   // Templates
   db.run(`
@@ -62,21 +47,10 @@ db.serialize(() => {
 
   // Add workout_details column to history table
   db.run("ALTER TABLE history ADD COLUMN workout_details TEXT", (err) => {
-    if (err) {
-      // Check if the error is because the column already exists
-      if (err.message.includes("duplicate column name")) {
-        console.log(
-          "Column 'workout_details' already exists in 'history' table."
-        );
-      } else {
-        console.error(
-          "Error adding 'workout_details' column to 'history' table:",
-          err.message
-        );
-      }
-    } else {
-      console.log(
-        "Column 'workout_details' added to 'history' table or already existed."
+    if (err && !err.message.includes("duplicate column name")) {
+      console.error(
+        "Error adding 'workout_details' column to 'history' table:",
+        err.message
       );
     }
   });
@@ -93,15 +67,6 @@ db.serialize(() => {
     )
   `);
 
-  // REMOVED: Add exerciseType to template_named_exercises if it doesn't exist
-  // db.run("ALTER TABLE template_named_exercises ADD COLUMN exerciseType TEXT DEFAULT 'reps'", (err) => {
-  //   if (err && !err.message.includes("duplicate column name")) {
-  //     console.error("Error adding 'exerciseType' column to 'template_named_exercises' table:", err.message);
-  //   } else if (!err) {
-  //     console.log("Column 'exerciseType' added to 'template_named_exercises' table or already existed.");
-  //   }
-  // });
-
   // exercise_sets
   db.run(`
     CREATE TABLE IF NOT EXISTS exercise_sets (
@@ -110,36 +75,10 @@ db.serialize(() => {
       set_order INTEGER,
       kg INTEGER NULL,
       reps INTEGER NULL,
-      -- duration INTEGER NULL, -- REMOVED
       completed BOOLEAN DEFAULT 0 
     )
   `);
-
-  // REMOVED: Add duration to exercise_sets if it doesn't exist
-  // db.run("ALTER TABLE exercise_sets ADD COLUMN duration INTEGER NULL", (err) => {
-  //   if (err && !err.message.includes("duplicate column name")) {
-  //     console.error("Error adding 'duration' column to 'exercise_sets' table:", err.message);
-  //   } else if (!err) {
-  //     console.log("Column 'duration' added to 'exercise_sets' table or already existed.");
-  //   }
-  // });
-
-  db.run(`
-      CREATE TABLE IF NOT EXISTS scan_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      barcode TEXT NOT NULL,
-      product_name TEXT NOT NULL,
-      image_url TEXT,
-      calories REAL,
-      protein REAL,
-      carbohydrates REAL,
-      fat REAL,
-      fiber REAL,
-      scanned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users (id)
-      )`
-  );
 });
+
 
 module.exports = db;
