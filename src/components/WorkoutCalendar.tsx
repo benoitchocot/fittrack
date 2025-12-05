@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WorkoutHistory } from '@/types/workout';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface WorkoutCalendarProps {
   history: WorkoutHistory[];
@@ -11,6 +13,7 @@ interface WorkoutCalendarProps {
 
 const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const navigate = useNavigate();
 
   // Extraire toutes les dates uniques où il y a des séances
   const workoutDates = useMemo(() => {
@@ -103,6 +106,44 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
     workout: 'workout-day',
   };
 
+  // Gestionnaire de clic sur un jour du calendrier
+  const handleDayClick = (day: Date | undefined) => {
+    if (!day) return;
+
+    // Normaliser la date cliquée
+    const clickedDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    const clickedDateKey = clickedDate.toISOString().split('T')[0];
+
+    // Trouver toutes les séances pour ce jour
+    const workoutsForDay = history.filter((workout) => {
+      if (workout.logged_at) {
+        const workoutDate = new Date(workout.logged_at);
+        const normalizedDate = new Date(workoutDate.getFullYear(), workoutDate.getMonth(), workoutDate.getDate());
+        const dateKey = normalizedDate.toISOString().split('T')[0];
+        return dateKey === clickedDateKey;
+      }
+      return false;
+    });
+
+    if (workoutsForDay.length === 0) {
+      toast.info("Aucune séance enregistrée pour ce jour.");
+      return;
+    }
+
+    // Si une ou plusieurs séances, naviguer vers la première
+    // (on pourrait améliorer pour afficher un menu si plusieurs séances)
+    if (workoutsForDay.length === 1) {
+      navigate(`/history/${workoutsForDay[0].history_db_id}`);
+    } else {
+      // Plusieurs séances : naviguer vers la plus récente
+      const sortedWorkouts = [...workoutsForDay].sort((a, b) => 
+        new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()
+      );
+      navigate(`/history/${sortedWorkouts[0].history_db_id}`);
+      toast.info(`${workoutsForDay.length} séances trouvées. Affichage de la plus récente.`);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -122,9 +163,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
               background-color: rgba(34, 197, 94, 0.2) !important;
               color: rgb(22, 163, 74) !important;
               font-weight: bold !important;
+              cursor: pointer !important;
             }
             .workout-day:hover {
-              background-color: rgba(34, 197, 94, 0.3) !important;
+              background-color: rgba(34, 197, 94, 0.4) !important;
+              transform: scale(1.05);
+              transition: all 0.2s ease-in-out;
             }
           `}
         </style>
@@ -134,12 +178,13 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
           onMonthChange={setSelectedMonth}
           modifiers={modifiers}
           modifiersClassNames={modifiersClassNames}
+          onDayClick={handleDayClick}
           className="rounded-md border"
         />
         <div className="mt-4 text-sm text-muted-foreground flex items-center gap-2">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-green-600 opacity-20"></div>
-            <span>Jours avec séances</span>
+            <span>Jours avec séances (cliquez pour voir les détails)</span>
           </div>
         </div>
       </CardContent>
