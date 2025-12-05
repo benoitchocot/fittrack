@@ -3,8 +3,18 @@ FROM node:18 AS builder
 
 WORKDIR /app
 
+# Configure npm pour être plus résilient
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5
+
 COPY package*.json ./
-RUN npm install
+
+# Nettoie le cache npm et installe les dépendances avec retry
+RUN npm cache clean --force || true && \
+    npm install --no-audit --prefer-offline || \
+    (sleep 5 && npm install --no-audit) || \
+    (sleep 10 && npm install --no-audit)
 
 COPY . .
 RUN npm run build
