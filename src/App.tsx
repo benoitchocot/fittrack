@@ -21,6 +21,7 @@ import WorkoutHistoryDetail from "./pages/WorkoutHistoryDetail";
 import TermsOfService from "./pages/TermsOfService";
 import ContactPage from "./pages/Contact";
 import ProfilePage from "./pages/Profile";
+import DeleteAccountPage from "./pages/admin/DeleteAccount";
 import AddToHomeScreenPrompt from "@/components/AddToHomeScreenPrompt";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const AppContent = () => {
         <Route path="/auth/register" element={<Register />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/admin/delete-account/:userId/:token" element={<DeleteAccountPage />} />
         {/* Routes requiring authentication */}
         <Route
           path="/*"

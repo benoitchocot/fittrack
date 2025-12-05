@@ -20,10 +20,13 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
     const dates = new Set<string>();
     history.forEach((workout) => {
       if (workout.logged_at) {
+        // Convertir en date locale pour éviter les problèmes de fuseau horaire
         const date = new Date(workout.logged_at);
-        // Normaliser la date au début de la journée
-        const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        dates.add(normalizedDate.toISOString().split('T')[0]);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const localDateStr = `${year}-${month}-${day}`;
+        dates.add(localDateStr);
       }
     });
     return dates;
@@ -35,9 +38,11 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
     history.forEach((workout) => {
       if (workout.logged_at) {
         const date = new Date(workout.logged_at);
-        const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        const dateKey = normalizedDate.toISOString().split('T')[0];
-        counts.set(dateKey, (counts.get(dateKey) || 0) + 1);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const localDateStr = `${year}-${month}-${day}`;
+        counts.set(localDateStr, (counts.get(localDateStr) || 0) + 1);
       }
     });
     return counts;
@@ -47,22 +52,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
   const monthStats = useMemo(() => {
     const year = selectedMonth.getFullYear();
     const month = selectedMonth.getMonth();
-    let daysWithWorkout = 0;
     let totalWorkouts = 0;
-
-    history.forEach((workout) => {
-      if (workout.logged_at) {
-        const date = new Date(workout.logged_at);
-        if (date.getFullYear() === year && date.getMonth() === month) {
-          totalWorkouts++;
-          const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-          const dateKey = normalizedDate.toISOString().split('T')[0];
-          if (workoutCountByDate.get(dateKey) === 1) {
-            daysWithWorkout++;
-          }
-        }
-      }
-    });
 
     // Compter les jours uniques avec séances
     const uniqueDays = new Set<string>();
@@ -70,8 +60,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
       if (workout.logged_at) {
         const date = new Date(workout.logged_at);
         if (date.getFullYear() === year && date.getMonth() === month) {
-          const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-          uniqueDays.add(normalizedDate.toISOString().split('T')[0]);
+          totalWorkouts++;
+          const dateYear = date.getFullYear();
+          const dateMonth = String(date.getMonth() + 1).padStart(2, '0');
+          const dateDay = String(date.getDate()).padStart(2, '0');
+          const localDateStr = `${dateYear}-${dateMonth}-${dateDay}`;
+          uniqueDays.add(localDateStr);
         }
       }
     });
@@ -80,13 +74,16 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
       daysWithWorkout: uniqueDays.size,
       totalWorkouts,
     };
-  }, [selectedMonth, history, workoutCountByDate]);
+  }, [selectedMonth, history]);
 
   // Fonction pour styliser les jours avec des séances
   const modifiers = useMemo(() => {
     const workoutDays: Date[] = [];
     workoutDates.forEach((dateStr) => {
-      workoutDays.push(new Date(dateStr + 'T00:00:00'));
+      // dateStr est au format YYYY-MM-DD
+      const [year, month, day] = dateStr.split('-').map(Number);
+      // Créer une date locale (month - 1 car les mois commencent à 0 en JavaScript)
+      workoutDays.push(new Date(year, month - 1, day));
     });
     return {
       workout: workoutDays,
@@ -110,16 +107,20 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ history }) => {
   const handleDayClick = (day: Date | undefined) => {
     if (!day) return;
 
-    // Normaliser la date cliquée
-    const clickedDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-    const clickedDateKey = clickedDate.toISOString().split('T')[0];
+    // Formater la date cliquée en format local YYYY-MM-DD
+    const clickedYear = day.getFullYear();
+    const clickedMonth = String(day.getMonth() + 1).padStart(2, '0');
+    const clickedDay = String(day.getDate()).padStart(2, '0');
+    const clickedDateKey = `${clickedYear}-${clickedMonth}-${clickedDay}`;
 
     // Trouver toutes les séances pour ce jour
     const workoutsForDay = history.filter((workout) => {
       if (workout.logged_at) {
         const workoutDate = new Date(workout.logged_at);
-        const normalizedDate = new Date(workoutDate.getFullYear(), workoutDate.getMonth(), workoutDate.getDate());
-        const dateKey = normalizedDate.toISOString().split('T')[0];
+        const year = workoutDate.getFullYear();
+        const month = String(workoutDate.getMonth() + 1).padStart(2, '0');
+        const day = String(workoutDate.getDate()).padStart(2, '0');
+        const dateKey = `${year}-${month}-${day}`;
         return dateKey === clickedDateKey;
       }
       return false;

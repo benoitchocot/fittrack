@@ -1,6 +1,10 @@
 // Main Express server file for the FitTrack backend API.
 // Handles routes for authentication, templates, history, scan, and data.
 // Configures CORS for allowed origins, body parsing, and serves on port 3001.
+
+// Charger les variables d'environnement depuis .env
+require('dotenv').config();
+
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -9,6 +13,8 @@ const templatesRoutes = require("./routes/templates");
 const historyRoutes = require("./routes/history");
 const authRoutes = require("./routes/auth");
 const dataRoutes = require("./routes/data");
+const contactRoutes = require("./routes/contact");
+const usersRoutes = require("./routes/users");
 
 const app = express();
 const PORT = 3001;
@@ -45,5 +51,7 @@ app.use("/history", historyRoutes);
 app.use("/auth", authRoutes);
 // app.use("/scan", scanRoutes);
 app.use("/data", dataRoutes);
+app.use("/contact", contactRoutes);
+app.use("/users", usersRoutes);
 
 app.listen(PORT);

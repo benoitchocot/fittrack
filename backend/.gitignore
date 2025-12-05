@@ -1,0 +1,23 @@
+# Fichiers d'environnement (contiennent des secrets)
+.env
+.env.local
+.env.*.local
+
+# Dépendances Node.js
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Base de données locale
+*.db
+*.sqlite
+*.sqlite3
+
+# Fichiers système
+.DS_Store
+Thumbs.db
