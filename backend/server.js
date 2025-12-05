@@ -43,6 +43,7 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use("/templates", templatesRoutes);
 app.use("/history", historyRoutes);
 app.use("/auth", authRoutes);
+// app.use("/scan", scanRoutes);
 app.use("/data", dataRoutes);
 
 app.listen(PORT);

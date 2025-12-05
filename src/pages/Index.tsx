@@ -12,6 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WorkoutCard from "@/components/WorkoutCard";
 import WorkoutHistoryCard from "@/components/WorkoutHistoryCard";
+import WorkoutCalendar from "@/components/WorkoutCalendar";
 import { Plus } from "lucide-react";
 import useRemoteStorage from "@/hooks/useRemoteStorage";
 import {
@@ -264,6 +265,12 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="history" className="mt-4">
+            {/* Calendrier des séances */}
+            <div className="mb-6">
+              <WorkoutCalendar history={history} />
+            </div>
+
+            {/* Barre de recherche et liste de l'historique */}
             <Input
               type="text"
               placeholder="Rechercher dans l'historique..."
